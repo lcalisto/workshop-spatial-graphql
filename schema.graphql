@@ -1,0 +1,1663 @@
+"""The root query type which gives access points into the data universe."""
+type Query {
+  """
+  Exposes the root query type nested one level down. This is helpful for Relay 1
+  which can only query top level fields if they are in a particular form.
+  """
+  query: Query!
+
+  """Reads and enables pagination through a set of `Landcover`."""
+  landcovers(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering `Landcover`."""
+    orderBy: [LandcoversOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: LandcoverCondition
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    filter: LandcoverFilter
+  ): LandcoversConnection
+
+  """Reads and enables pagination through a set of `Municipality`."""
+  municipalities(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering `Municipality`."""
+    orderBy: [MunicipalitiesOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: MunicipalityCondition
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    filter: MunicipalityFilter
+  ): MunicipalitiesConnection
+
+  """Reads and enables pagination through a set of `Population`."""
+  populations(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering `Population`."""
+    orderBy: [PopulationsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: PopulationCondition
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    filter: PopulationFilter
+  ): PopulationsConnection
+
+  """Reads and enables pagination through a set of `Srtm`."""
+  srtms(
+    """Only read the first `n` values of the set."""
+    first: Int
+
+    """Only read the last `n` values of the set."""
+    last: Int
+
+    """
+    Skip the first `n` values from our `after` cursor, an alternative to cursor
+    based pagination. May not be used with `last`.
+    """
+    offset: Int
+
+    """Read all values in the set before (above) this cursor."""
+    before: Cursor
+
+    """Read all values in the set after (below) this cursor."""
+    after: Cursor
+
+    """The method to use when ordering `Srtm`."""
+    orderBy: [SrtmsOrderBy!] = [PRIMARY_KEY_ASC]
+
+    """
+    A condition to be used in determining which values should be returned by the collection.
+    """
+    condition: SrtmCondition
+
+    """
+    A filter to be used in determining which values should be returned by the collection.
+    """
+    filter: SrtmFilter
+  ): SrtmsConnection
+  landcover(id: Int!): Landcover
+  municipality(id: Int!): Municipality
+  municipalityByDico(dico: String!): Municipality
+  population(id: Int!): Population
+  populationByDico(dico: String!): Population
+  srtm(rid: Int!): Srtm
+}
+
+"""A connection to a list of `Landcover` values."""
+type LandcoversConnection {
+  """A list of `Landcover` objects."""
+  nodes: [Landcover!]!
+
+  """
+  A list of edges which contains the `Landcover` and cursor to aid in pagination.
+  """
+  edges: [LandcoversEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `Landcover` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""Landcover for Lisbon region"""
+type Landcover {
+  id: Int!
+  geom: GeometryMultiPolygon
+  fid: BigInt
+  cos2018N1: String
+  cos2018N4: String
+  cos2018Lg: String
+  area: Float
+}
+
+type GeometryMultiPolygon implements GeometryInterface & GeometryGeometry {
+  geojson: GeoJSON
+  srid: Int!
+  polygons: [GeometryPolygon]
+}
+
+"""All geometry types implement this interface"""
+interface GeometryInterface {
+  """Converts the object to GeoJSON"""
+  geojson: GeoJSON
+
+  """Spatial reference identifier (SRID)"""
+  srid: Int!
+}
+
+"""
+The `GeoJSON` scalar type represents GeoJSON values as specified by[RFC 7946](https://tools.ietf.org/html/rfc7946).
+"""
+scalar GeoJSON
+
+"""All geometry XY types implement this interface"""
+interface GeometryGeometry {
+  """Converts the object to GeoJSON"""
+  geojson: GeoJSON
+
+  """Spatial reference identifier (SRID)"""
+  srid: Int!
+}
+
+type GeometryPolygon implements GeometryInterface & GeometryGeometry {
+  geojson: GeoJSON
+  srid: Int!
+  exterior: GeometryLineString
+  interiors: [GeometryLineString]
+}
+
+type GeometryLineString implements GeometryInterface & GeometryGeometry {
+  geojson: GeoJSON
+  srid: Int!
+  points: [GeometryPoint]
+}
+
+type GeometryPoint implements GeometryInterface & GeometryGeometry {
+  geojson: GeoJSON
+  srid: Int!
+  x: Float!
+  y: Float!
+}
+
+"""
+A signed eight-byte integer. The upper big integer values are greater than the
+max value for a JavaScript number. Therefore all big integers will be output as
+strings and not numbers.
+"""
+scalar BigInt
+
+"""A `Landcover` edge in the connection."""
+type LandcoversEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `Landcover` at the end of the edge."""
+  node: Landcover!
+}
+
+"""A location in a connection that can be used for resuming pagination."""
+scalar Cursor
+
+"""Information about pagination in a connection."""
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: Cursor
+
+  """When paginating forwards, the cursor to continue."""
+  endCursor: Cursor
+}
+
+"""Methods to use when ordering `Landcover`."""
+enum LandcoversOrderBy {
+  NATURAL
+  ID_ASC
+  ID_DESC
+  GEOM_ASC
+  GEOM_DESC
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
+"""
+A condition to be used against `Landcover` object types. All fields are tested
+for equality and combined with a logical ‘and.’
+"""
+input LandcoverCondition {
+  """Checks for equality with the object’s `id` field."""
+  id: Int
+
+  """Checks for equality with the object’s `geom` field."""
+  geom: GeoJSON
+}
+
+"""
+A filter to be used against `Landcover` object types. All fields are combined with a logical ‘and.’
+"""
+input LandcoverFilter {
+  """Filter by the object’s `id` field."""
+  id: IntFilter
+
+  """Filter by the object’s `geom` field."""
+  geom: GeometryMultiPolygonFilter
+
+  """Checks for all expressions in this list."""
+  and: [LandcoverFilter!]
+
+  """Checks for any expressions in this list."""
+  or: [LandcoverFilter!]
+
+  """Negates the expression."""
+  not: LandcoverFilter
+}
+
+"""
+A filter to be used against Int fields. All fields are combined with a logical ‘and.’
+"""
+input IntFilter {
+  """
+  Is null (if `true` is specified) or is not null (if `false` is specified).
+  """
+  isNull: Boolean
+
+  """Equal to the specified value."""
+  equalTo: Int
+
+  """Not equal to the specified value."""
+  notEqualTo: Int
+
+  """
+  Not equal to the specified value, treating null like an ordinary value.
+  """
+  distinctFrom: Int
+
+  """Equal to the specified value, treating null like an ordinary value."""
+  notDistinctFrom: Int
+
+  """Included in the specified list."""
+  in: [Int!]
+
+  """Not included in the specified list."""
+  notIn: [Int!]
+
+  """Less than the specified value."""
+  lessThan: Int
+
+  """Less than or equal to the specified value."""
+  lessThanOrEqualTo: Int
+
+  """Greater than the specified value."""
+  greaterThan: Int
+
+  """Greater than or equal to the specified value."""
+  greaterThanOrEqualTo: Int
+}
+
+"""
+A filter to be used against GeometryMultiPolygon fields. All fields are combined with a logical ‘and.’
+"""
+input GeometryMultiPolygonFilter {
+  """Bounding box is strictly above the specified geometry's bounding box."""
+  bboxAbove: GeoJSON
+
+  """Bounding box is strictly below the specified geometry's bounding box."""
+  bboxBelow: GeoJSON
+
+  """Bounding box contains the specified geometry's bounding box."""
+  bboxContains: GeoJSON
+
+  """Bounding box is the same as the specified geometry's bounding box."""
+  bboxEquals: GeoJSON
+
+  """2D bounding box intersects the specified geometry's 2D bounding box."""
+  bboxIntersects2D: GeoJSON
+
+  """n-D bounding box intersects the specified geometry's n-D bounding box."""
+  bboxIntersectsND: GeoJSON
+
+  """
+  Bounding box is strictly to the left of the specified geometry's bounding box.
+  """
+  bboxLeftOf: GeoJSON
+
+  """
+  Bounding box overlaps or is above the specified geometry's bounding box.
+  """
+  bboxOverlapsOrAbove: GeoJSON
+
+  """
+  Bounding box overlaps or is below the specified geometry's bounding box.
+  """
+  bboxOverlapsOrBelow: GeoJSON
+
+  """
+  Bounding box overlaps or is to the left of the specified geometry's bounding box.
+  """
+  bboxOverlapsOrLeftOf: GeoJSON
+
+  """
+  Bounding box overlaps or is to the right of the specified geometry's bounding box.
+  """
+  bboxOverlapsOrRightOf: GeoJSON
+
+  """
+  Bounding box is strictly to the right of the specified geometry's bounding box.
+  """
+  bboxRightOf: GeoJSON
+
+  """
+  No points of the specified geometry lie in the exterior, and at least one point of the interior of the specified geometry lies in the interior.
+  """
+  contains: GeoJSON
+
+  """
+  The specified geometry intersects the interior but not the boundary (or exterior).
+  """
+  containsProperly: GeoJSON
+
+  """No point is outside the specified geometry."""
+  coveredBy: GeoJSON
+
+  """No point in the specified geometry is outside."""
+  covers: GeoJSON
+
+  """They have some, but not all, interior points in common."""
+  crosses: GeoJSON
+
+  """They do not share any space together."""
+  disjoint: GeoJSON
+
+  """They represent the same geometry. Directionality is ignored."""
+  equals: GeoJSON
+
+  """Coordinates and coordinate order are the same as specified geometry."""
+  exactlyEquals: GeoJSON
+
+  """They share any portion of space in 2D."""
+  intersects: GeoJSON
+
+  """They share any portion of space in 3D."""
+  intersects3D: GeoJSON
+
+  """
+  They represent the same geometry and points are in the same directional order.
+  """
+  orderingEquals: GeoJSON
+
+  """
+  They share space, are of the same dimension, but are not completely contained by each other.
+  """
+  overlaps: GeoJSON
+
+  """
+  They have at least one point in common, but their interiors do not intersect.
+  """
+  touches: GeoJSON
+
+  """Completely inside the specified geometry."""
+  within: GeoJSON
+}
+
+"""A connection to a list of `Municipality` values."""
+type MunicipalitiesConnection {
+  """A list of `Municipality` objects."""
+  nodes: [Municipality!]!
+
+  """
+  A list of edges which contains the `Municipality` and cursor to aid in pagination.
+  """
+  edges: [MunicipalitiesEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `Municipality` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""Portuguese municipalities"""
+type Municipality {
+  id: Int!
+  geom: GeometryPolygon
+  dico: String
+  name: String
+  district: String
+  numberFreg: String
+  nutsiii: String
+  nutsii: String
+  nutsi: String
+  altMax: String
+  altMin: String
+  areaHa: String
+  perimKm: String
+
+  """Reads a single `Population` that is related to this `Municipality`."""
+  populationByDico: Population
+}
+
+"""Some population parameters of Portugal"""
+type Population {
+  id: Int!
+  dico: String
+  maleResidents: Int
+  femaleResidents: Int
+  households: Int
+  comments: String
+
+  """Reads a single `Municipality` that is related to this `Population`."""
+  municipalityByDico: Municipality
+}
+
+"""A `Municipality` edge in the connection."""
+type MunicipalitiesEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `Municipality` at the end of the edge."""
+  node: Municipality!
+}
+
+"""Methods to use when ordering `Municipality`."""
+enum MunicipalitiesOrderBy {
+  NATURAL
+  ID_ASC
+  ID_DESC
+  GEOM_ASC
+  GEOM_DESC
+  DICO_ASC
+  DICO_DESC
+  NAME_ASC
+  NAME_DESC
+  DISTRICT_ASC
+  DISTRICT_DESC
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
+"""
+A condition to be used against `Municipality` object types. All fields are
+tested for equality and combined with a logical ‘and.’
+"""
+input MunicipalityCondition {
+  """Checks for equality with the object’s `id` field."""
+  id: Int
+
+  """Checks for equality with the object’s `geom` field."""
+  geom: GeoJSON
+
+  """Checks for equality with the object’s `dico` field."""
+  dico: String
+
+  """Checks for equality with the object’s `name` field."""
+  name: String
+
+  """Checks for equality with the object’s `district` field."""
+  district: String
+}
+
+"""
+A filter to be used against `Municipality` object types. All fields are combined with a logical ‘and.’
+"""
+input MunicipalityFilter {
+  """Filter by the object’s `id` field."""
+  id: IntFilter
+
+  """Filter by the object’s `geom` field."""
+  geom: GeometryPolygonFilter
+
+  """Filter by the object’s `dico` field."""
+  dico: StringFilter
+
+  """Filter by the object’s `name` field."""
+  name: StringFilter
+
+  """Filter by the object’s `district` field."""
+  district: StringFilter
+
+  """Checks for all expressions in this list."""
+  and: [MunicipalityFilter!]
+
+  """Checks for any expressions in this list."""
+  or: [MunicipalityFilter!]
+
+  """Negates the expression."""
+  not: MunicipalityFilter
+}
+
+"""
+A filter to be used against GeometryPolygon fields. All fields are combined with a logical ‘and.’
+"""
+input GeometryPolygonFilter {
+  """Bounding box is strictly above the specified geometry's bounding box."""
+  bboxAbove: GeoJSON
+
+  """Bounding box is strictly below the specified geometry's bounding box."""
+  bboxBelow: GeoJSON
+
+  """Bounding box contains the specified geometry's bounding box."""
+  bboxContains: GeoJSON
+
+  """Bounding box is the same as the specified geometry's bounding box."""
+  bboxEquals: GeoJSON
+
+  """2D bounding box intersects the specified geometry's 2D bounding box."""
+  bboxIntersects2D: GeoJSON
+
+  """n-D bounding box intersects the specified geometry's n-D bounding box."""
+  bboxIntersectsND: GeoJSON
+
+  """
+  Bounding box is strictly to the left of the specified geometry's bounding box.
+  """
+  bboxLeftOf: GeoJSON
+
+  """
+  Bounding box overlaps or is above the specified geometry's bounding box.
+  """
+  bboxOverlapsOrAbove: GeoJSON
+
+  """
+  Bounding box overlaps or is below the specified geometry's bounding box.
+  """
+  bboxOverlapsOrBelow: GeoJSON
+
+  """
+  Bounding box overlaps or is to the left of the specified geometry's bounding box.
+  """
+  bboxOverlapsOrLeftOf: GeoJSON
+
+  """
+  Bounding box overlaps or is to the right of the specified geometry's bounding box.
+  """
+  bboxOverlapsOrRightOf: GeoJSON
+
+  """
+  Bounding box is strictly to the right of the specified geometry's bounding box.
+  """
+  bboxRightOf: GeoJSON
+
+  """
+  No points of the specified geometry lie in the exterior, and at least one point of the interior of the specified geometry lies in the interior.
+  """
+  contains: GeoJSON
+
+  """
+  The specified geometry intersects the interior but not the boundary (or exterior).
+  """
+  containsProperly: GeoJSON
+
+  """No point is outside the specified geometry."""
+  coveredBy: GeoJSON
+
+  """No point in the specified geometry is outside."""
+  covers: GeoJSON
+
+  """They have some, but not all, interior points in common."""
+  crosses: GeoJSON
+
+  """They do not share any space together."""
+  disjoint: GeoJSON
+
+  """They represent the same geometry. Directionality is ignored."""
+  equals: GeoJSON
+
+  """Coordinates and coordinate order are the same as specified geometry."""
+  exactlyEquals: GeoJSON
+
+  """They share any portion of space in 2D."""
+  intersects: GeoJSON
+
+  """They share any portion of space in 3D."""
+  intersects3D: GeoJSON
+
+  """
+  They represent the same geometry and points are in the same directional order.
+  """
+  orderingEquals: GeoJSON
+
+  """
+  They share space, are of the same dimension, but are not completely contained by each other.
+  """
+  overlaps: GeoJSON
+
+  """
+  They have at least one point in common, but their interiors do not intersect.
+  """
+  touches: GeoJSON
+
+  """Completely inside the specified geometry."""
+  within: GeoJSON
+}
+
+"""
+A filter to be used against String fields. All fields are combined with a logical ‘and.’
+"""
+input StringFilter {
+  """
+  Is null (if `true` is specified) or is not null (if `false` is specified).
+  """
+  isNull: Boolean
+
+  """Equal to the specified value."""
+  equalTo: String
+
+  """Not equal to the specified value."""
+  notEqualTo: String
+
+  """
+  Not equal to the specified value, treating null like an ordinary value.
+  """
+  distinctFrom: String
+
+  """Equal to the specified value, treating null like an ordinary value."""
+  notDistinctFrom: String
+
+  """Included in the specified list."""
+  in: [String!]
+
+  """Not included in the specified list."""
+  notIn: [String!]
+
+  """Less than the specified value."""
+  lessThan: String
+
+  """Less than or equal to the specified value."""
+  lessThanOrEqualTo: String
+
+  """Greater than the specified value."""
+  greaterThan: String
+
+  """Greater than or equal to the specified value."""
+  greaterThanOrEqualTo: String
+
+  """Contains the specified string (case-sensitive)."""
+  includes: String
+
+  """Does not contain the specified string (case-sensitive)."""
+  notIncludes: String
+
+  """Contains the specified string (case-insensitive)."""
+  includesInsensitive: String
+
+  """Does not contain the specified string (case-insensitive)."""
+  notIncludesInsensitive: String
+
+  """Starts with the specified string (case-sensitive)."""
+  startsWith: String
+
+  """Does not start with the specified string (case-sensitive)."""
+  notStartsWith: String
+
+  """Starts with the specified string (case-insensitive)."""
+  startsWithInsensitive: String
+
+  """Does not start with the specified string (case-insensitive)."""
+  notStartsWithInsensitive: String
+
+  """Ends with the specified string (case-sensitive)."""
+  endsWith: String
+
+  """Does not end with the specified string (case-sensitive)."""
+  notEndsWith: String
+
+  """Ends with the specified string (case-insensitive)."""
+  endsWithInsensitive: String
+
+  """Does not end with the specified string (case-insensitive)."""
+  notEndsWithInsensitive: String
+
+  """
+  Matches the specified pattern (case-sensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters.
+  """
+  like: String
+
+  """
+  Does not match the specified pattern (case-sensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters.
+  """
+  notLike: String
+
+  """
+  Matches the specified pattern (case-insensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters.
+  """
+  likeInsensitive: String
+
+  """
+  Does not match the specified pattern (case-insensitive). An underscore (_) matches any single character; a percent sign (%) matches any sequence of zero or more characters.
+  """
+  notLikeInsensitive: String
+
+  """Equal to the specified value (case-insensitive)."""
+  equalToInsensitive: String
+
+  """Not equal to the specified value (case-insensitive)."""
+  notEqualToInsensitive: String
+
+  """
+  Not equal to the specified value, treating null like an ordinary value (case-insensitive).
+  """
+  distinctFromInsensitive: String
+
+  """
+  Equal to the specified value, treating null like an ordinary value (case-insensitive).
+  """
+  notDistinctFromInsensitive: String
+
+  """Included in the specified list (case-insensitive)."""
+  inInsensitive: [String!]
+
+  """Not included in the specified list (case-insensitive)."""
+  notInInsensitive: [String!]
+
+  """Less than the specified value (case-insensitive)."""
+  lessThanInsensitive: String
+
+  """Less than or equal to the specified value (case-insensitive)."""
+  lessThanOrEqualToInsensitive: String
+
+  """Greater than the specified value (case-insensitive)."""
+  greaterThanInsensitive: String
+
+  """Greater than or equal to the specified value (case-insensitive)."""
+  greaterThanOrEqualToInsensitive: String
+}
+
+"""A connection to a list of `Population` values."""
+type PopulationsConnection {
+  """A list of `Population` objects."""
+  nodes: [Population!]!
+
+  """
+  A list of edges which contains the `Population` and cursor to aid in pagination.
+  """
+  edges: [PopulationsEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `Population` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""A `Population` edge in the connection."""
+type PopulationsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `Population` at the end of the edge."""
+  node: Population!
+}
+
+"""Methods to use when ordering `Population`."""
+enum PopulationsOrderBy {
+  NATURAL
+  ID_ASC
+  ID_DESC
+  DICO_ASC
+  DICO_DESC
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
+"""
+A condition to be used against `Population` object types. All fields are tested
+for equality and combined with a logical ‘and.’
+"""
+input PopulationCondition {
+  """Checks for equality with the object’s `id` field."""
+  id: Int
+
+  """Checks for equality with the object’s `dico` field."""
+  dico: String
+}
+
+"""
+A filter to be used against `Population` object types. All fields are combined with a logical ‘and.’
+"""
+input PopulationFilter {
+  """Filter by the object’s `id` field."""
+  id: IntFilter
+
+  """Filter by the object’s `dico` field."""
+  dico: StringFilter
+
+  """Checks for all expressions in this list."""
+  and: [PopulationFilter!]
+
+  """Checks for any expressions in this list."""
+  or: [PopulationFilter!]
+
+  """Negates the expression."""
+  not: PopulationFilter
+}
+
+"""A connection to a list of `Srtm` values."""
+type SrtmsConnection {
+  """A list of `Srtm` objects."""
+  nodes: [Srtm!]!
+
+  """
+  A list of edges which contains the `Srtm` and cursor to aid in pagination.
+  """
+  edges: [SrtmsEdge!]!
+
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """The count of *all* `Srtm` you could get from the connection."""
+  totalCount: Int!
+}
+
+"""STRM for Lisbon region"""
+type Srtm {
+  rid: Int!
+  rast: String
+}
+
+"""A `Srtm` edge in the connection."""
+type SrtmsEdge {
+  """A cursor for use in pagination."""
+  cursor: Cursor
+
+  """The `Srtm` at the end of the edge."""
+  node: Srtm!
+}
+
+"""Methods to use when ordering `Srtm`."""
+enum SrtmsOrderBy {
+  NATURAL
+  RID_ASC
+  RID_DESC
+  PRIMARY_KEY_ASC
+  PRIMARY_KEY_DESC
+}
+
+"""
+A condition to be used against `Srtm` object types. All fields are tested for equality and combined with a logical ‘and.’
+"""
+input SrtmCondition {
+  """Checks for equality with the object’s `rid` field."""
+  rid: Int
+}
+
+"""
+A filter to be used against `Srtm` object types. All fields are combined with a logical ‘and.’
+"""
+input SrtmFilter {
+  """Filter by the object’s `rid` field."""
+  rid: IntFilter
+
+  """Checks for all expressions in this list."""
+  and: [SrtmFilter!]
+
+  """Checks for any expressions in this list."""
+  or: [SrtmFilter!]
+
+  """Negates the expression."""
+  not: SrtmFilter
+}
+
+"""
+The root mutation type which contains root level fields which mutate data.
+"""
+type Mutation {
+  """Creates a single `Landcover`."""
+  createLandcover(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateLandcoverInput!
+  ): CreateLandcoverPayload
+
+  """Creates a single `Municipality`."""
+  createMunicipality(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateMunicipalityInput!
+  ): CreateMunicipalityPayload
+
+  """Creates a single `Population`."""
+  createPopulation(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreatePopulationInput!
+  ): CreatePopulationPayload
+
+  """Creates a single `Srtm`."""
+  createSrtm(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: CreateSrtmInput!
+  ): CreateSrtmPayload
+
+  """Updates a single `Landcover` using a unique key and a patch."""
+  updateLandcover(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateLandcoverInput!
+  ): UpdateLandcoverPayload
+
+  """Updates a single `Municipality` using a unique key and a patch."""
+  updateMunicipality(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateMunicipalityInput!
+  ): UpdateMunicipalityPayload
+
+  """Updates a single `Municipality` using a unique key and a patch."""
+  updateMunicipalityByDico(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateMunicipalityByDicoInput!
+  ): UpdateMunicipalityPayload
+
+  """Updates a single `Population` using a unique key and a patch."""
+  updatePopulation(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdatePopulationInput!
+  ): UpdatePopulationPayload
+
+  """Updates a single `Population` using a unique key and a patch."""
+  updatePopulationByDico(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdatePopulationByDicoInput!
+  ): UpdatePopulationPayload
+
+  """Updates a single `Srtm` using a unique key and a patch."""
+  updateSrtm(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: UpdateSrtmInput!
+  ): UpdateSrtmPayload
+
+  """Deletes a single `Landcover` using a unique key."""
+  deleteLandcover(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteLandcoverInput!
+  ): DeleteLandcoverPayload
+
+  """Deletes a single `Municipality` using a unique key."""
+  deleteMunicipality(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteMunicipalityInput!
+  ): DeleteMunicipalityPayload
+
+  """Deletes a single `Municipality` using a unique key."""
+  deleteMunicipalityByDico(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteMunicipalityByDicoInput!
+  ): DeleteMunicipalityPayload
+
+  """Deletes a single `Population` using a unique key."""
+  deletePopulation(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeletePopulationInput!
+  ): DeletePopulationPayload
+
+  """Deletes a single `Population` using a unique key."""
+  deletePopulationByDico(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeletePopulationByDicoInput!
+  ): DeletePopulationPayload
+
+  """Deletes a single `Srtm` using a unique key."""
+  deleteSrtm(
+    """
+    The exclusive input argument for this mutation. An object type, make sure to see documentation for this object’s fields.
+    """
+    input: DeleteSrtmInput!
+  ): DeleteSrtmPayload
+}
+
+"""The output of our create `Landcover` mutation."""
+type CreateLandcoverPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Landcover` that was created by this mutation."""
+  landcover: Landcover
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Landcover`. May be used by Relay 1."""
+  landcoverEdge(
+    """The method to use when ordering `Landcover`."""
+    orderBy: [LandcoversOrderBy!] = [PRIMARY_KEY_ASC]
+  ): LandcoversEdge
+}
+
+"""All input for the create `Landcover` mutation."""
+input CreateLandcoverInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `Landcover` to be created by this mutation."""
+  landcover: LandcoverInput!
+}
+
+"""An input for mutations affecting `Landcover`"""
+input LandcoverInput {
+  id: Int
+  geom: GeoJSON
+  fid: BigInt
+  cos2018N1: String
+  cos2018N4: String
+  cos2018Lg: String
+  area: Float
+}
+
+"""The output of our create `Municipality` mutation."""
+type CreateMunicipalityPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Municipality` that was created by this mutation."""
+  municipality: Municipality
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Municipality`. May be used by Relay 1."""
+  municipalityEdge(
+    """The method to use when ordering `Municipality`."""
+    orderBy: [MunicipalitiesOrderBy!] = [PRIMARY_KEY_ASC]
+  ): MunicipalitiesEdge
+}
+
+"""All input for the create `Municipality` mutation."""
+input CreateMunicipalityInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `Municipality` to be created by this mutation."""
+  municipality: MunicipalityInput!
+}
+
+"""An input for mutations affecting `Municipality`"""
+input MunicipalityInput {
+  id: Int
+  geom: GeoJSON
+  dico: String
+  name: String
+  district: String
+  numberFreg: String
+  nutsiii: String
+  nutsii: String
+  nutsi: String
+  altMax: String
+  altMin: String
+  areaHa: String
+  perimKm: String
+}
+
+"""The output of our create `Population` mutation."""
+type CreatePopulationPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Population` that was created by this mutation."""
+  population: Population
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """Reads a single `Municipality` that is related to this `Population`."""
+  municipalityByDico: Municipality
+
+  """An edge for our `Population`. May be used by Relay 1."""
+  populationEdge(
+    """The method to use when ordering `Population`."""
+    orderBy: [PopulationsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): PopulationsEdge
+}
+
+"""All input for the create `Population` mutation."""
+input CreatePopulationInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `Population` to be created by this mutation."""
+  population: PopulationInput!
+}
+
+"""An input for mutations affecting `Population`"""
+input PopulationInput {
+  id: Int
+  dico: String
+  maleResidents: Int
+  femaleResidents: Int
+  households: Int
+  comments: String
+}
+
+"""The output of our create `Srtm` mutation."""
+type CreateSrtmPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Srtm` that was created by this mutation."""
+  srtm: Srtm
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Srtm`. May be used by Relay 1."""
+  srtmEdge(
+    """The method to use when ordering `Srtm`."""
+    orderBy: [SrtmsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): SrtmsEdge
+}
+
+"""All input for the create `Srtm` mutation."""
+input CreateSrtmInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """The `Srtm` to be created by this mutation."""
+  srtm: SrtmInput!
+}
+
+"""An input for mutations affecting `Srtm`"""
+input SrtmInput {
+  rid: Int
+  rast: String
+}
+
+"""The output of our update `Landcover` mutation."""
+type UpdateLandcoverPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Landcover` that was updated by this mutation."""
+  landcover: Landcover
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Landcover`. May be used by Relay 1."""
+  landcoverEdge(
+    """The method to use when ordering `Landcover`."""
+    orderBy: [LandcoversOrderBy!] = [PRIMARY_KEY_ASC]
+  ): LandcoversEdge
+}
+
+"""All input for the `updateLandcover` mutation."""
+input UpdateLandcoverInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """
+  An object where the defined keys will be set on the `Landcover` being updated.
+  """
+  patch: LandcoverPatch!
+  id: Int!
+}
+
+"""
+Represents an update to a `Landcover`. Fields that are set will be updated.
+"""
+input LandcoverPatch {
+  id: Int
+  geom: GeoJSON
+  fid: BigInt
+  cos2018N1: String
+  cos2018N4: String
+  cos2018Lg: String
+  area: Float
+}
+
+"""The output of our update `Municipality` mutation."""
+type UpdateMunicipalityPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Municipality` that was updated by this mutation."""
+  municipality: Municipality
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Municipality`. May be used by Relay 1."""
+  municipalityEdge(
+    """The method to use when ordering `Municipality`."""
+    orderBy: [MunicipalitiesOrderBy!] = [PRIMARY_KEY_ASC]
+  ): MunicipalitiesEdge
+}
+
+"""All input for the `updateMunicipality` mutation."""
+input UpdateMunicipalityInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """
+  An object where the defined keys will be set on the `Municipality` being updated.
+  """
+  patch: MunicipalityPatch!
+  id: Int!
+}
+
+"""
+Represents an update to a `Municipality`. Fields that are set will be updated.
+"""
+input MunicipalityPatch {
+  id: Int
+  geom: GeoJSON
+  dico: String
+  name: String
+  district: String
+  numberFreg: String
+  nutsiii: String
+  nutsii: String
+  nutsi: String
+  altMax: String
+  altMin: String
+  areaHa: String
+  perimKm: String
+}
+
+"""All input for the `updateMunicipalityByDico` mutation."""
+input UpdateMunicipalityByDicoInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """
+  An object where the defined keys will be set on the `Municipality` being updated.
+  """
+  patch: MunicipalityPatch!
+  dico: String!
+}
+
+"""The output of our update `Population` mutation."""
+type UpdatePopulationPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Population` that was updated by this mutation."""
+  population: Population
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """Reads a single `Municipality` that is related to this `Population`."""
+  municipalityByDico: Municipality
+
+  """An edge for our `Population`. May be used by Relay 1."""
+  populationEdge(
+    """The method to use when ordering `Population`."""
+    orderBy: [PopulationsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): PopulationsEdge
+}
+
+"""All input for the `updatePopulation` mutation."""
+input UpdatePopulationInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """
+  An object where the defined keys will be set on the `Population` being updated.
+  """
+  patch: PopulationPatch!
+  id: Int!
+}
+
+"""
+Represents an update to a `Population`. Fields that are set will be updated.
+"""
+input PopulationPatch {
+  id: Int
+  dico: String
+  maleResidents: Int
+  femaleResidents: Int
+  households: Int
+  comments: String
+}
+
+"""All input for the `updatePopulationByDico` mutation."""
+input UpdatePopulationByDicoInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """
+  An object where the defined keys will be set on the `Population` being updated.
+  """
+  patch: PopulationPatch!
+  dico: String!
+}
+
+"""The output of our update `Srtm` mutation."""
+type UpdateSrtmPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Srtm` that was updated by this mutation."""
+  srtm: Srtm
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Srtm`. May be used by Relay 1."""
+  srtmEdge(
+    """The method to use when ordering `Srtm`."""
+    orderBy: [SrtmsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): SrtmsEdge
+}
+
+"""All input for the `updateSrtm` mutation."""
+input UpdateSrtmInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+
+  """
+  An object where the defined keys will be set on the `Srtm` being updated.
+  """
+  patch: SrtmPatch!
+  rid: Int!
+}
+
+"""Represents an update to a `Srtm`. Fields that are set will be updated."""
+input SrtmPatch {
+  rid: Int
+  rast: String
+}
+
+"""The output of our delete `Landcover` mutation."""
+type DeleteLandcoverPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Landcover` that was deleted by this mutation."""
+  landcover: Landcover
+  deletedLandcoverNodeId: ID
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Landcover`. May be used by Relay 1."""
+  landcoverEdge(
+    """The method to use when ordering `Landcover`."""
+    orderBy: [LandcoversOrderBy!] = [PRIMARY_KEY_ASC]
+  ): LandcoversEdge
+}
+
+"""All input for the `deleteLandcover` mutation."""
+input DeleteLandcoverInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: Int!
+}
+
+"""The output of our delete `Municipality` mutation."""
+type DeleteMunicipalityPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Municipality` that was deleted by this mutation."""
+  municipality: Municipality
+  deletedMunicipalityNodeId: ID
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Municipality`. May be used by Relay 1."""
+  municipalityEdge(
+    """The method to use when ordering `Municipality`."""
+    orderBy: [MunicipalitiesOrderBy!] = [PRIMARY_KEY_ASC]
+  ): MunicipalitiesEdge
+}
+
+"""All input for the `deleteMunicipality` mutation."""
+input DeleteMunicipalityInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: Int!
+}
+
+"""All input for the `deleteMunicipalityByDico` mutation."""
+input DeleteMunicipalityByDicoInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  dico: String!
+}
+
+"""The output of our delete `Population` mutation."""
+type DeletePopulationPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Population` that was deleted by this mutation."""
+  population: Population
+  deletedPopulationNodeId: ID
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """Reads a single `Municipality` that is related to this `Population`."""
+  municipalityByDico: Municipality
+
+  """An edge for our `Population`. May be used by Relay 1."""
+  populationEdge(
+    """The method to use when ordering `Population`."""
+    orderBy: [PopulationsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): PopulationsEdge
+}
+
+"""All input for the `deletePopulation` mutation."""
+input DeletePopulationInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  id: Int!
+}
+
+"""All input for the `deletePopulationByDico` mutation."""
+input DeletePopulationByDicoInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  dico: String!
+}
+
+"""The output of our delete `Srtm` mutation."""
+type DeleteSrtmPayload {
+  """
+  The exact same `clientMutationId` that was provided in the mutation input,
+  unchanged and unused. May be used by a client to track mutations.
+  """
+  clientMutationId: String
+
+  """The `Srtm` that was deleted by this mutation."""
+  srtm: Srtm
+  deletedSrtmNodeId: ID
+
+  """
+  Our root query field type. Allows us to run any query from our mutation payload.
+  """
+  query: Query
+
+  """An edge for our `Srtm`. May be used by Relay 1."""
+  srtmEdge(
+    """The method to use when ordering `Srtm`."""
+    orderBy: [SrtmsOrderBy!] = [PRIMARY_KEY_ASC]
+  ): SrtmsEdge
+}
+
+"""All input for the `deleteSrtm` mutation."""
+input DeleteSrtmInput {
+  """
+  An arbitrary string value with no semantic meaning. Will be included in the
+  payload verbatim. May be used to track mutations by the client.
+  """
+  clientMutationId: String
+  rid: Int!
+}
