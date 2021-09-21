@@ -53,7 +53,7 @@ As mentioned [here](https://www.graphile.org/postgraphile/namespaces)
 
 ## PostGraphile
 
-In order to implement a spatial GraphQL API we will make use of PostGraphile (https://www.graphile.org). If you never used PostGraphile we recommend to check its [documentation](https://www.graphile.org/postgraphile/introduction). This workshop was based on PostGraphile docs.
+In order to implement a spatial GraphQL API we will make use of PostGraphile (https://www.graphile.org). If you never used PostGraphile we recommend to check its [documentation](https://www.graphile.org/postgraphile/introduction). Part of this workshop was based on PostGraphile docs.
 
 ### PostGraphile usage
 
@@ -65,7 +65,7 @@ According to the documentation PostGraphile is formed of three forms of usage:
   
 - **Schema-only**, deepest layer which contains all the types, fields and resolvers.
 
-At this workshop we will use **CLI** and eventually a very simple **Library** with NodeJS and Express.
+**At this workshop we will use mainly the CLI**. Eventually, if we have time, we'll show a very basic library usage with NodeJS and Express.
 
 ----------
 
@@ -76,7 +76,7 @@ npm install -g postgraphile
 ```
 
 ### Plugins
-PostGraphile can costumized using plugins. You can find more info about this on [GraphQL Schema Plugins](https://www.graphile.org/postgraphile/extending/).
+PostGraphile can be customized using plugins. You can find more info about this on [GraphQL Schema Plugins](https://www.graphile.org/postgraphile/extending/).
 
 We will make use of the following plugins:
 
@@ -101,7 +101,7 @@ More info about plugins can be found on [PostGraphile community plugins](https:/
 
 ### Running the server as CLI
 
-Now that we have installed the CLI we can run is as following
+Now that we have installed the CLI we will run it as following
 
 ```shell
 postgraphile \
@@ -116,7 +116,6 @@ postgraphile \
   --extended-errors hint,detail,errcode \
   --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
   --skip-plugins graphile-build:NodePlugin \
-  --export-schema-graphql schema.graphql \
   --simple-collections omit \
   --graphiql "/" \
   --enhance-graphiql \
@@ -127,8 +126,9 @@ postgraphile \
   --schema app_public
 ```
 
-Please check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
+This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above.
 
+Please check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
 
 
 After auth: https://www.graphile.org/postgraphile/security/
@@ -146,7 +146,6 @@ postgraphile \
   --extended-errors hint,detail,errcode \
   --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
   --skip-plugins graphile-build:NodePlugin \
-  --export-schema-graphql schema.graphql \
   --simple-collections omit \
   --graphiql "/" \
   --enhance-graphiql \
@@ -172,12 +171,13 @@ You can simplify the inflector further by adding `{graphileBuildOptions: {pgOmit
 
 ## Filter 
 
-To use the filter we must have an index:
+To use the filter we should have an index:
 
 ```sql
 CREATE INDEX ON "app_public"."municipalities"("district");
 ```
 
+Or simply remove option `--no-ignore-indexes` from CLI. Be carefull, this action can lead to expensive access due to missing indexes.
 ## smart tags
 https://www.graphile.org/postgraphile/smart-tags/
 
