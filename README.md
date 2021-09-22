@@ -23,7 +23,7 @@ In order to move forward make sure you have instaled:
 
 ----------
 
-## Create and restore a PostgreSQL database
+## 1 - Create and restore a PostgreSQL database
 
 In order to start the workshop we will use an existing database. The ideia is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
 
@@ -51,11 +51,11 @@ As mentioned [here](https://www.graphile.org/postgraphile/namespaces)
 
 ----------
 
-## PostGraphile
+## 2 - Using PostGraphile
 
 In order to implement a spatial GraphQL API we will make use of PostGraphile (https://www.graphile.org). If you never used PostGraphile we recommend to check its [documentation](https://www.graphile.org/postgraphile/introduction). Part of this workshop was based on PostGraphile docs.
 
-### PostGraphile usage
+### PostGraphile usage forms
 
 According to the documentation PostGraphile is formed of three forms of usage:
 
@@ -66,6 +66,8 @@ According to the documentation PostGraphile is formed of three forms of usage:
 - **Schema-only**, deepest layer which contains all the types, fields and resolvers.
 
 **At this workshop we will use mainly the CLI**. Eventually, if we have time, we'll show a very basic library usage with NodeJS and Express.
+
+You can check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
 
 ----------
 
@@ -126,38 +128,92 @@ postgraphile \
   --schema app_public
 ```
 
-This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above.
+This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above. 
 
-Please check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
+### Explore the interface and current schema
+
+Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE.
+
+### First queries {#First-queries}
+
+Now that we setup our inital API lest run some queries:
 
 
-After auth: https://www.graphile.org/postgraphile/security/
+1) Query municipality with `ID 153`
 
-```shell
-postgraphile \
-  --subscriptions \
-  --watch \
-  --dynamic-json \
-  --no-setof-functions-contain-nulls \
-  --no-ignore-rbac \
-  --no-ignore-indexes \
-  --port 5000 \
-  --show-error-stack=json \
-  --extended-errors hint,detail,errcode \
-  --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
-  --skip-plugins graphile-build:NodePlugin \
-  --simple-collections omit \
-  --graphiql "/" \
-  --enhance-graphiql \
-  --allow-explain \
-  --jwt-secret mysecret \
-  --jwt-token-identifier jwtUserToken \
-  --enable-query-batching \
-  --legacy-relations omit \
-  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
-  --schema app_public
+```graphql
+{
+  municipality(id:153){
+    name
+    district
+  }
+}
 ```
-## Pagination
+
+2) Query municipality with `ID 153` and get its population. Don't forget population table is related to the `municipalities` using attribute `DICO` .
+
+```graphql
+{
+  municipality(id:153){
+    name
+    district
+    populationByDico{
+      households
+      femaleResidents
+      maleResidents
+    }
+  }
+}
+```
+
+3) Get all municipalities. Notice that plural connections are generated automatically `municipalitiesList`.
+
+
+```graphql
+{
+  municipalitiesList{
+    name
+    district
+  }
+}
+```
+
+4) Get all municipalities and its population.
+
+```graphql
+{
+  municipalitiesList{
+    name
+    district
+    populationByDico{
+      femaleResidents
+      maleResidents
+      households
+    }
+  }
+}
+```
+
+5) Get `first 10` municipalities and its population.
+
+```graphql
+{
+  municipalitiesList(first:10){
+    name
+    district
+    populationByDico{
+      femaleResidents
+      maleResidents
+      households
+    }
+  }
+}
+```
+
+
+## 3 - Pagination
+
+As you might have noticed on the [first queries](#First-queries) we started 
 
 https://graphql.org/learn/pagination/
 
@@ -169,7 +225,7 @@ https://relay.dev/graphql/connections.htm
 You can simplify the inflector further by adding `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
 
 
-## Filter 
+## 4 - Filter 
 
 To use the filter we should have an index:
 
@@ -178,7 +234,7 @@ CREATE INDEX ON "app_public"."municipalities"("district");
 ```
 
 Or simply remove option `--no-ignore-indexes` from CLI. Be carefull, this action can lead to expensive access due to missing indexes.
-## smart tags
+## 5 - Smart tags
 https://www.graphile.org/postgraphile/smart-tags/
 
 ```sql 
@@ -192,3 +248,12 @@ Another example a bit more complex. Renaming relationship in order to have clear
 comment on constraint population_dico_fkey on app_public.population_stat is
   E'@foreignFieldName population\n@fieldName municipality\nDocumentation here.';
 ```
+
+## 6 - Extending the schema
+### Computed columns
+
+### Custom queries
+
+## 7 - CRUD Mutations
+
+## 8 - Authentication
