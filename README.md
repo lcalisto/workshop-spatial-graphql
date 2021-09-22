@@ -35,7 +35,8 @@ Using **pgAdmin** please create a new, empty database and then restore it using 
 After restoring the DB you will see 4 tables and 3 schemas:
 - **municipality**, Spatial table with portuguese municipalities.
 - **population**, Non-spatial table with portuguese population per municipality;
-- **landcover**, Spatial (vector) table with landcover for Lisbon region from 2018 [from here](https://www.dgterritorio.gov.pt/Carta-de-Uso-e-Ocupacao-do-Solo-para-2018).
+- **parcels**, Spatial table used to collect polygons during field campaign;
+- **landcover**, Spatial (vector) table with landcover for Lisbon region from [Corine 2018](https://land.copernicus.eu/pan-european/corine-land-cover/clc2018)
 - **srtm**, Spatial (raster) table with SRTM for Lisbon region. 
 
 
@@ -48,6 +49,7 @@ As mentioned [here](https://www.graphile.org/postgraphile/namespaces)
 - **app_public**, Tables and functions to be exposed to GraphQL (or any other system) - it's your public interface. This is the main part of your database.
 - **app_private**, No-one should be able to read this without a SECURITY DEFINER function letting them selectively do things. This is where you store passwords (bcrypted), access tokens (hopefully encrypted), etc.
 - **public**, Should be empty, used only as a default location for PostgreSQL extensions.
+
 
 ----------
 
@@ -101,7 +103,7 @@ More info about plugins can be found on [PostGraphile community plugins](https:/
 
 ----------
 
-### Running the server as CLI
+### Running the server as CLI {#Running-the-server-as-CLI}
 
 Now that we have installed the CLI we will run it as following
 
@@ -118,7 +120,7 @@ postgraphile \
   --extended-errors hint,detail,errcode \
   --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
   --skip-plugins graphile-build:NodePlugin \
-  --simple-collections omit \
+  --simple-collections only \
   --graphiql "/" \
   --enhance-graphiql \
   --allow-explain \
@@ -136,10 +138,10 @@ Now that you run the CLI command, point your browser to [http://localhost:5000](
 
 ### First queries {#First-queries}
 
-Now that we setup our inital API lest run some queries:
+Now that we setup our inital API let's query it:
 
 
-1) Query municipality with `ID 153`
+- Query municipality with `ID 153`
 
 ```graphql
 {
@@ -150,7 +152,7 @@ Now that we setup our inital API lest run some queries:
 }
 ```
 
-2) Query municipality with `ID 153` and get its population. Don't forget population table is related to the `municipalities` using attribute `DICO` .
+- Query municipality with `ID 153` and get its population. Don't forget population table is related to the `municipalities` using attribute `DICO` .
 
 ```graphql
 {
@@ -166,7 +168,7 @@ Now that we setup our inital API lest run some queries:
 }
 ```
 
-3) Get all municipalities. Notice that plural connections are generated automatically `municipalitiesList`.
+- Get all municipalities. Notice that plural connections are generated automatically `municipalitiesList`.
 
 
 ```graphql
@@ -178,7 +180,7 @@ Now that we setup our inital API lest run some queries:
 }
 ```
 
-4) Get all municipalities and its population.
+- Get all municipalities and its population.
 
 ```graphql
 {
@@ -194,7 +196,7 @@ Now that we setup our inital API lest run some queries:
 }
 ```
 
-5) Get `first 10` municipalities and its population.
+- Get `first 10` municipalities and its population.
 
 ```graphql
 {
@@ -210,30 +212,383 @@ Now that we setup our inital API lest run some queries:
 }
 ```
 
+- Get all parcels.
 
-## 3 - Pagination
+```graphql
+{
+  parcelsList{
+    name
+    createdBy
+  }
+}
+```
+### Spatial queries {#Spatial-queries}
 
-As you might have noticed on the [first queries](#First-queries) we started 
+Its now time to go spatial! 
 
-https://graphql.org/learn/pagination/
+- Get the geometry as geojson and the SRID from the first municipality.
 
-https://relay.dev/graphql/connections.htm
+```graphql
+{
+  municipalitiesList(first:1) {
+    name
+    district
+    geom{
+      srid
+      geojson
+    }
+  }
+}
+```
+- Get the geometry as geojson and the SRID from the first parcel.
 
-`--simple-collections only` "omit" (default) - relay connections only, "only" - simple collections only (no Relay connections), "both" - both
+```graphql
+{
+  parcelsList(first:1){
+    name
+    createdBy
+    geom{
+      srid
+      geojson
+    }
+  }
+}
 
-
-You can simplify the inflector further by adding `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
-
-
-## 4 - Filter 
-
-To use the filter we should have an index:
-
-```sql
-CREATE INDEX ON "app_public"."municipalities"("district");
 ```
 
-Or simply remove option `--no-ignore-indexes` from CLI. Be carefull, this action can lead to expensive access due to missing indexes.
+#### Geometry decomposition.
+
+PostGraphile automatically generates sub geometries, the next query shows how that can be achived out of the box. Parcels geom column is MultiPolygon data type, therefore we can generate all sub-geometries that compose MultiPolygon.
+
+```graphql
+{
+  parcelsList(first:1){
+    name
+    createdBy
+    geom{
+      srid
+      geojson
+      polygons{
+        exterior{
+          geojson
+          points{
+            geojson
+            x
+            y
+          }
+        }
+      }
+    }
+  }
+}
+
+```
+
+ 
+## 3 - Pagination
+
+
+We will not focus on this workshop on pagination but it is a very important concept in GraphQL, we recommend reading https://graphql.org/learn/pagination/ to better understand how pagination can be handled in GraphQL.
+
+As you might have noticed on the [first queries](#First-queries) we started querying one municipality and end up with plural connections which are part of the pagination concept. 
+
+### More queries
+
+- Using **offset**
+
+```graphql
+{
+  municipalitiesList(first:10, offset:10){
+    name
+    district
+    populationByDico{
+      femaleResidents
+      maleResidents
+      households
+    }
+  }
+}
+```
+
+- Using **last**
+
+```graphql
+{
+  municipalitiesList(last:10){
+    name
+    district
+    populationByDico{
+      femaleResidents
+      maleResidents
+      households
+    }
+  }
+}
+```
+
+#### Relay connections
+
+In order to have some simplicity we deactivated relay connections these type of connections come from the [Relay Cursor Connections Specification](https://relay.dev/graphql/connections.htm) for more information you should read this specification since they can be quite useful. Relay connections allows perform cursor-based pagination, and is seen as a GraphQL best practice.
+
+We can control how PostGraphile CLI generates `collections` using:
+
+`--simple-collections omit` "omit" - PostGraphile generates relay connections only;
+
+`--simple-collections only` "only" - simple collections only (no Relay connections);
+
+`--simple-collections both` "both" - both relay and simple connections.
+
+You can try to activate both relay and simple connections, and explore the schema, please check the differences as folowing:
+
+```shell
+postgraphile \
+  --subscriptions \
+  --watch \
+  --dynamic-json \
+  --no-setof-functions-contain-nulls \
+  --no-ignore-rbac \
+  --no-ignore-indexes \
+  --port 5000 \
+  --show-error-stack=json \
+  --extended-errors hint,detail,errcode \
+  --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
+  --skip-plugins graphile-build:NodePlugin \
+  --simple-collections both \
+  --graphiql "/" \
+  --enhance-graphiql \
+  --allow-explain \
+  --enable-query-batching \
+  --legacy-relations omit \
+  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
+  --schema app_public
+```
+
+During this workshop we wont use relay connections anymore. You can remove them using `--simple-collections only` or just copy the CLI command from the [beginning](#Running-the-server-as-CLI).
+### Note for Library usage
+
+If you, just like me, you prefer to use simple connections but you don't like `List` suffix on the simple collections, you can remove it using `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
+
+
+## 4 - Filters
+
+PostGraphile supports rudimentary filtering on connections using a **condition argument**. This condition mechanism is very limited and **does not support spatial** filtering. Therefore we will use instead [connection-filter plugin](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter) that we already installed and has advanced filter capabilities, including spatial filtering based on [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis).
+
+
+By default filter is only available on fields that have indexes, this is to avoid expensive access due to missing indexes.
+
+Lets add some indexes and see the effect in our API.
+```sql
+CREATE INDEX ON "app_public"."municipality"("district");
+
+CREATE INDEX ON "app_public"."municipality"("name");
+
+CREATE INDEX ON "app_public"."parcels"("created_by");
+
+CREATE INDEX ON "app_public"."parcels"("name");
+```
+
+
+Removing option `--no-ignore-indexes` from CLI, all fields, even the ones that don't appear to be indexed, can be used on the filter. Be carefull, this action can lead to expensive access due to missing indexes.
+
+
+- Query Benfica Stadium :stadium: from parcels:
+  
+```graphql
+{
+  parcelsList(filter: {name: {like: "Benfica stadium"}}) {
+    name
+    createdBy
+  }
+}
+```
+
+- Query all parcels created by `user1`:
+  
+```graphql
+{
+  parcelsList(filter: {createdBy: {like: "user1"}}) {
+    name
+    createdBy
+  }
+}
+```
+
+
+- Query all municipalities from Lisbon district:
+  
+```graphql
+{
+  municipalitiesList(filter: {district: {like: "Lisboa"}}) {
+    name
+    district
+  }
+}
+```
+
+- Query all municipalities **in** a list of districts
+  
+```graphql
+{
+  municipalitiesList(filter: {district: {in: ["Lisboa","Porto"]}}) {
+    name
+    district
+    populationByDico {
+      households
+    }
+  }
+}
+```
+
+### Spatial filters
+
+Since we have [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis) we can use spatial filters. Please take some time exploring available geometry filters in Graphiql IDE
+
+```graphql
+{
+  municipalitiesList(
+    filter: {
+      geom: {
+        bboxIntersects2D: {
+          type: "Polygon"
+          coordinates: [
+            [
+              [-9.253921508789062, 38.70855351447061]
+              [-9.185256958007812, 38.70855351447061]
+              [-9.185256958007812, 38.74497964505743]
+              [-9.253921508789062, 38.74497964505743]
+              [-9.253921508789062, 38.70855351447061]
+            ]
+          ]
+        }
+      }
+    }
+  ) {
+    name
+    district
+  }
+}
+
+```
+
+#### Using variables 
+
+We will now get all municipalities (from municipality table) that intersect Lisbon Airport. But at the same time we will show how to use variables.
+
+- First lets get Lisbon Airport geojson
+
+```graphql
+{
+  parcelsList(first: 1, filter: { name: { like: "Lisbon airport" } }) {
+    name
+    createdBy
+    geom {
+      geojson
+    }
+  }
+}
+
+```
+
+You should get the following geojson result from the previous query. Please add it to https://geojson.io and confirm its location.
+
+```json
+{
+	"type": "MultiPolygon",
+	"coordinates": [
+		[
+			[
+				[
+					-9.130609331,
+					38.801232389
+				],
+				[
+					-9.123779675,
+					38.799759326
+				],
+				[
+					-9.131948479,
+					38.784359123
+				],
+				[
+					-9.126725801,
+					38.766548453
+				],
+				[
+					-9.129805842,
+					38.763200583
+				],
+				[
+					-9.149223489,
+					38.765611049
+				],
+				[
+					-9.130609331,
+					38.801232389
+				]
+			]
+		]
+	]
+}
+```
+
+- Next lets write a query with one input variable, in this case variable name is `input1` of type GeoJSON. On this particular example we name our query `query1`.
+
+```graphql
+query query1 ($input1: GeoJSON) {
+  municipalitiesList(filter: {geom: {intersects: $input1}}) {
+    name
+    district
+  }
+}
+```
+
+Now we need to insert the variable, to achive that please insert below code into QUERY VARIABLES 
+
+```JSON
+{"input1":  {
+	"type": "MultiPolygon",
+	"coordinates": [
+		[
+			[
+				[
+					-9.130609331,
+					38.801232389
+				],
+				[
+					-9.123779675,
+					38.799759326
+				],
+				[
+					-9.131948479,
+					38.784359123
+				],
+				[
+					-9.126725801,
+					38.766548453
+				],
+				[
+					-9.129805842,
+					38.763200583
+				],
+				[
+					-9.149223489,
+					38.765611049
+				],
+				[
+					-9.130609331,
+					38.801232389
+				]
+			]
+		]
+	]
+} }
+```
+You should have something like the image below
+
+![Query Variables](raw_data/Screenshot1.png)
+
+As we can see Lisbon Airport is on 2 Municipalities: Lisbon and Loures.
+
 ## 5 - Smart tags
 https://www.graphile.org/postgraphile/smart-tags/
 
@@ -252,7 +607,14 @@ comment on constraint population_dico_fkey on app_public.population_stat is
 ## 6 - Extending the schema
 ### Computed columns
 
+#### Parcels area
+
 ### Custom queries
+
+#### Landcover parcels
+
+#### Raster datasets (SRTM stats for municipalities)
+
 
 ## 7 - CRUD Mutations
 

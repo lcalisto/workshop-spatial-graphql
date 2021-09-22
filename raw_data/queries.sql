@@ -23,6 +23,7 @@ ALTER TABLE app_public.population_stat
 
 CREATE TABLE app_public.parcels (
   id SERIAL PRIMARY KEY,
+  name character varying,
   geom geometry(MultiPolygon,4326),
   created_by character varying,
   comments text
