@@ -2,6 +2,22 @@
 
 ### This workshop aims to explain and exemplify the use of Postgraphile and PostgreSQL to generate a spatial GraphQL API.
 
+----------
+## Table of contents
+
+1 - Create and restore a PostgreSQL database
+2 - Using PostGraphile
+3 - Pagination
+4 - Filters
+5 - Smart tags
+6 - Extending the schema
+6.2 - Custom queries
+6.1 - Computed columns
+7 - CRUD Mutations
+8 - Authentication
+
+
+----------
 ## What is GraphQL?
 
 *GraphQL is a query language for your API. GraphQL isn't tied to any specific database or storage engine and is instead backed by your existing code and data.*
@@ -14,16 +30,16 @@ If you are new to GraphQL it might be good to check the official documentation: 
 
 ## Requirements
 
-In order to move forward make sure you have instaled:
+In order to move forward make sure you have installed:
 
 - **PostgreSQL** with **PostGIS**
 - **npm**
-- **pgAdmin4** (recomended)
+- **pgAdmin4** (recommended)
 
 
 ----------
 
-## 1 - Create and restore a PostgreSQL database
+## 1 - Create and restore a PostgreSQL database 
 
 In order to start the workshop we will use an existing database. The ideia is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
 
@@ -71,7 +87,6 @@ According to the documentation PostGraphile is formed of three forms of usage:
 
 You can check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
 
-----------
 
 Install PostGraphile globally via npm:
 
@@ -284,7 +299,7 @@ PostGraphile automatically generates sub geometries, the next query shows how th
 
 ```
 
- 
+ ----------
 ## 3 - Pagination
 
 
@@ -368,7 +383,7 @@ During this workshop we wont use relay connections anymore. You can remove them 
 
 If you, just like me, you prefer to use simple connections but you don't like `List` suffix on the simple collections, you can remove it using `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
 
-
+----------
 ## 4 - Filters
 
 PostGraphile supports rudimentary filtering on connections using a **condition argument**. This condition mechanism is very limited and **does not support spatial** filtering. Therefore we will use instead [connection-filter plugin](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter) that we already installed and has advanced filter capabilities, including spatial filtering based on [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis).
@@ -590,6 +605,7 @@ You should have something like the image below
 
 As we can see Lisbon Airport is on 2 Municipalities: Lisbon and Loures.
 
+----------
 ## 5 - Smart tags
 
 Its possible to customise PostGraphile GraphQL schema by using tags on our database tables, columns, functions etc. These can rename, omit, etc from the GraphQL schema. In other words, it allow us to change the GraphQL schema without changing the database data model.
@@ -641,7 +657,7 @@ Moving forward on our schema simplification lets now rename a constrain (relatio
 comment on constraint population_dico_fkey on app_public.population_stat is
   E'@foreignFieldName population\n@fieldName municipality\nDocumentation here.';
 ```
-
+----------
 ## 6 - Extending the schema
 
 One of the most important capabilities of PostGraphile if the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
@@ -827,8 +843,10 @@ GraphQL query:
   }
 }
 ```
-
+----------
 
 ## 7 - CRUD Mutations
+
+----------
 
 ## 8 - Authentication
