@@ -670,7 +670,7 @@ GraphQL query:
 }
 ```
 
-**Also works with filters**
+**Also works with filters** Make sure you removed `--no-ignore-indexes` from **PostGraphile** executable.
 ```graphql
 {
   parcelsList(filter: {area: {greaterThan: 300000}}) {
