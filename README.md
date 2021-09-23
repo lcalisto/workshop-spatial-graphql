@@ -391,15 +391,16 @@ CREATE INDEX ON "app_public"."parcels"("name");
 Removing option `--no-ignore-indexes` from CLI, all fields, even the ones that don't appear to be indexed, can be used on the filter. Be carefull, this action can lead to expensive access due to missing indexes.
 
 
-- Query Benfica Stadium :stadium: from parcels:
+- Query all parcels that have `benfica` :stadium: in its name.
   
 ```graphql
 {
-  parcelsList(filter: {name: {like: "Benfica stadium"}}) {
+  parcelsList(filter: {name: {includesInsensitive: "benfica"}}) {
     name
     createdBy
   }
 }
+
 ```
 
 - Query all parcels created by `user1`:
@@ -590,14 +591,51 @@ You should have something like the image below
 As we can see Lisbon Airport is on 2 Municipalities: Lisbon and Loures.
 
 ## 5 - Smart tags
-https://www.graphile.org/postgraphile/smart-tags/
+
+Its possible to customise PostGraphile GraphQL schema by using tags on our database tables, columns, functions etc. These can rename, omit, etc from the GraphQL schema. In other words, it allow us to change the GraphQL schema without changing the database data model.
+
+More information on Smart tags and how to use them can be found here: https://www.graphile.org/postgraphile/smart-tags/
+
+#### Omit
+Using PgAdmin lets run the following SQL code using PgAdmin. Check what happens on the GraphQL schema.
 
 ```sql 
-comment on table landcover is E'@omit';
-comment on table app_public.landcover is NULL;
+comment on table app_public.municipality is E'@omit';
 ```
 
-Another example a bit more complex. Renaming relationship in order to have clear names.
+As you realized all connections to municipality have been removed, although at the database level we only added one comment, nothing changed the DB.
+
+We can remove the smart tag and revert its effect by simply remove the previous comment.
+
+```sql 
+comment on table app_public.municipality is NULL;
+```
+
+Lets now omit SRTM from our schema because its a raster dataset. We'll access it using a different technique.
+
+
+```sql 
+comment on table app_public.srtm is E'@omit';
+```
+
+#### Rename
+
+In order to rename an object we can use **@name**. Please run the following to rename out table `landcover`.
+
+```sql
+comment on table app_public.landcover is E'@name clc_landcover';
+```
+
+Notice that `clc_landcover` was changed into `clcLandcover`. 
+
+**Columns** can also be renamed.
+
+```sql
+comment on column app_public.landcover.label3 is E'@name label';
+```
+
+
+Moving forward on our schema simplification lets now rename a constrain (relationship) in order to have clear names. Please run the following example and check what happens in your schema, inside `population` and `municipality`.
 
 ```sql
 comment on constraint population_dico_fkey on app_public.population_stat is
@@ -605,15 +643,190 @@ comment on constraint population_dico_fkey on app_public.population_stat is
 ```
 
 ## 6 - Extending the schema
-### Computed columns
+
+One of the most important capabilities of PostGraphile if the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
+### 6.1 - Computed columns
+
+From the [docs](https://www.graphile.org/postgraphile/): *"Computed columns" add what appears to be an extra column (field) to the GraphQL table type, but, unlike an actual column, the value for this field is the result of calling a function defined in the PostgreSQL schema. This function will automatically be exposed to the resultant GraphQL schema as a field on the type; it can accept arguments that influence its result, and may return either a scalar, record, list or a set.* computed-columns/)
 
 #### Parcels area
 
-### Custom queries
+In this example we will generate an extra field on the parcels connection which give us the area of that parcel.
 
-#### Landcover parcels
+```sql
+create or replace function app_public.parcels_area(p app_public.parcels)
+returns real as $$
+  select ST_Area(p.geom,true);
+$$ language sql stable;
+```
 
-#### Raster datasets (SRTM stats for municipalities)
+GraphQL query:
+```graphql
+{
+  parcelsList(first: 2) {
+    name
+    area
+  }
+}
+```
+
+**Also works with filters**
+```graphql
+{
+  parcelsList(filter: {area: {greaterThan: 300000}}) {
+    name
+    area
+    srtmList {
+      min
+      max
+      mean
+    }
+  }
+}
+```
+
+
+#### Landcover
+
+On the next example we will generate an extra field on the parcels connection which give us one array with all intersecting landcover types.
+
+```sql
+create or replace function app_public.parcels_clc_landcover(p app_public.parcels)
+returns varchar[] as $$
+SELECT array_agg(distinct l.label3)
+FROM app_public.landcover AS l
+WHERE ST_Intersects(p.geom,l.geom)
+$$ language sql stable;
+```
+
+GraphQL query:
+```graphql
+{
+  parcelsList(first: 2) {
+    name
+    area
+    clcLandcover
+  }
+}
+```
+
+**With filters**, get all parcels that intersect `Green urban areas`
+
+```graphql
+{
+  parcelsList(filter: {clcLandcover: {contains: "Green urban areas"}}) {
+    name
+    area
+    clcLandcover
+  }
+}
+```
+
+
+#### SRTM
+
+On the next example we will generate an extra fields on the parcels connection which gives **STRM raster statistics**.
+
+
+```sql
+DROP TYPE IF EXISTS srtm_stats CASCADE;
+
+CREATE TYPE srtm_stats AS (
+  "min" real,
+  "max" real,
+  "mean" real
+);
+
+create or replace function app_public.parcels_srtm(p app_public.parcels)
+returns setof srtm_stats as $$
+WITH t AS (
+  SELECT st_summarystats(ST_Union(ST_Clip(r.rast, ST_Transform(p.geom,3763),true))) as stats
+  FROM app_public.srtm AS r
+  WHERE ST_Intersects(ST_Transform(p.geom,3763),r.rast)
+)
+SELECT (stats).min,(stats).max,(stats).mean FROM t;
+$$ language sql stable;
+```
+
+For more information on **how to use raster data inside PostGIS** you can check my [workshop-postgis-raster](https://github.com/lcalisto/workshop-postgis-raster).
+
+GraphQL query:
+```graphql
+{
+  parcelsList {
+    name
+    area
+    srtmList {
+      min
+      max
+      mean
+    }
+  }
+}
+```
+
+With filters:
+
+```graphql
+{
+  parcelsList(filter: { name: { includesInsensitive: "benfica" } }) {
+    name
+    area
+    srtmList {
+      min
+      max
+      mean
+    }
+  }
+}
+```
+
+
+
+**To discuss:** What is the difference between a computed column and a PostgreSQL generated column?
+### 6.2 - Custom queries
+
+While Computed columns generate one extra field on a specific connection, custom queries can add root-level Query fields to our GraphQL schema. This can be quite important while generating our API specially for processing algorithms.
+#### Get Landcover 
+
+On this example we are going to generate a custom query where the user can insert a GeoJSON with a geometry and a distance. It will return all landcover rows that intersect that geometry. If distance is specified the search radius will include that distance using a Buffer (ST_Buffer) around the specified geometry.
+
+```sql
+create or replace function app_public.get_landcover(geometry JSON, distance real DEFAULT NULL)
+returns SETOF app_public.landcover as $$
+declare
+   g_geom geometry;
+BEGIN
+	IF distance IS NOT NULL AND distance > 0 THEN
+	  IF distance > 10001  THEN
+		RAISE EXCEPTION 'Maximum allowed distance for this operation is 10 km.';
+	  ELSE
+		g_geom=ST_SetSRID(st_buffer(ST_GeomFromGeoJSON(geometry)::geography,distance)::geometry,4326);
+	  END IF;
+	ELSE
+	g_geom=ST_SetSRID(ST_GeomFromGeoJSON(geometry),4326);
+	END IF;
+	
+RETURN QUERY
+	SELECT *
+	FROM app_public.landcover AS l
+	WHERE ST_Intersects(g_geom,l.geom);
+END;
+$$ language plpgsql stable;
+```
+
+
+GraphQL query:
+```graphql
+{
+  getLandcoverList(
+    geometry: { type: "Point", coordinates: [-9.1615, 38.7122] }
+    distance: 1000
+  ) {
+    label
+  }
+}
+```
 
 
 ## 7 - CRUD Mutations
