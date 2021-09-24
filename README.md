@@ -5,16 +5,14 @@
 ----------
 ## Table of contents
 
-1 - Create and restore a PostgreSQL database
-2 - Using PostGraphile
-3 - Pagination
-4 - Filters
-5 - Smart tags
-6 - Extending the schema
-6.2 - Custom queries
-6.1 - Computed columns
-7 - CRUD Mutations
-8 - Authentication
+1) Create and restore a PostgreSQL database
+2) Using PostGraphile
+3) Pagination
+4) Filters
+5) Smart tags
+6) Extending the schema
+7) CRUD Mutations
+8) Authentication
 
 
 ----------
@@ -39,7 +37,7 @@ In order to move forward make sure you have installed:
 
 ----------
 
-## 1 - Create and restore a PostgreSQL database 
+## 1 - Create and restore a PostgreSQL database
 
 In order to start the workshop we will use an existing database. The ideia is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
 
