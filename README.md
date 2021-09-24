@@ -118,7 +118,7 @@ More info about plugins can be found on [PostGraphile community plugins](https:/
 
 ----------
 
-### Running the server as CLI {#Running-the-server-as-CLI}
+### Running the server as CLI
 
 Now that we have installed the CLI we will run it as following
 
@@ -151,7 +151,7 @@ This will generate a minimal schema, since we are omitting the NodePlugin, with 
 
 Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE.
 
-### First queries {#First-queries}
+### First queries
 
 Now that we setup our inital API let's query it:
 
@@ -237,7 +237,7 @@ Now that we setup our inital API let's query it:
   }
 }
 ```
-### Spatial queries {#Spatial-queries}
+### Spatial queries
 
 Its now time to go spatial! 
 
