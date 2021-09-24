@@ -10,7 +10,9 @@
 3) [Pagination](#3---pagination)
 4) [Filters](#4---filters)
 5) [Smart tags](#5---smart-tags)
-6) [Extending the schema](#6---extending-the-schema)
+6) [Extending the schema](#6---extending-the-schema)  
+	6.1) [Computed columns](#61---computed-columns)  
+	6.2) [Custom queries](#62---custom-queries)
 7) [CRUD Mutations](#7---crud-mutations)
 8) [Authentication](#8---authentication)
 
