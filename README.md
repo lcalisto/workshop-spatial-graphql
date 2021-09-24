@@ -5,14 +5,14 @@
 ----------
 ## Table of contents
 
-1) Create and restore a PostgreSQL database
-2) Using PostGraphile
-3) Pagination
-4) Filters
-5) Smart tags
-6) Extending the schema
-7) CRUD Mutations
-8) Authentication
+1) [Create and restore a PostgreSQL database](#1---create-and-restore-a-postgresql-database)
+2) [Using PostGraphile](#2---using-postgraphile)
+3) [Pagination](#3---pagination)
+4) [Filters](#4---filters)
+5) [Smart tags](#5---smart-tags)
+6) [Extending the schema](#6---extending-the-schema)
+7) [CRUD Mutations](#7---crud-mutations)
+8) [Authentication](#8---authentication)
 
 
 ----------
