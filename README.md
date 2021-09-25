@@ -32,11 +32,12 @@ If you are new to GraphQL it might be good to check the official documentation: 
 
 In order to move forward make sure you have installed:
 
-- **PostgreSQL** with **PostGIS**
+- **PostgreSQL** with **PostGIS** (you can use docker)
 - **NodeJS** v14.x.x
 - **npm**
 - **pgAdmin4** (recommended)
 
+For install procedures for local postgreSQL and pgadmin: [here](Requirements.md)
 
 ----------
 
@@ -46,7 +47,7 @@ In order to start the workshop we will use an existing database. The ideia is to
 
 Using **pgAdmin** please create a new, empty database and then restore it using the following file [initial_db.backup](./raw_data/initial_db.backup) into the new recently created database.
 
-### Existing database 
+### Existing database
 
 
 After restoring the DB you will see 4 tables and 3 schemas:
