@@ -1150,10 +1150,10 @@ grant execute on function app_public.register_person(text, text, text) to app_an
 
 Updating the CLI with:
 
-**--connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql"**
-**--default-role app_anonymous**
-**--schema app_public**
-**--jwt-secret keyboard_kitten**
+**--connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql"**  
+**--default-role app_anonymous**  
+**--schema app_public**  
+**--jwt-secret keyboard_kitten**  
 **--jwt-token-identifier app_public.jwt_token**
 
 
