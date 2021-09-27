@@ -133,7 +133,6 @@ postgraphile \
   --dynamic-json \
   --no-setof-functions-contain-nulls \
   --no-ignore-rbac \
-  --no-ignore-indexes \
   --port 5000 \
   --show-error-stack=json \
   --extended-errors hint,detail,errcode \
@@ -366,7 +365,6 @@ postgraphile \
   --dynamic-json \
   --no-setof-functions-contain-nulls \
   --no-ignore-rbac \
-  --no-ignore-indexes \
   --port 5000 \
   --show-error-stack=json \
   --extended-errors hint,detail,errcode \
@@ -980,3 +978,320 @@ query {
 ----------
 
 ## 8 - Authentication
+
+Authentication and authorization is incredibly important whenever you build an application. You want your users to be able to login and out of your service, and only edit the content your platform has given them permission to edit. Postgres already has great support for authentication and authorization using a secure role based system, so PostGraphile just bridges the gap between the Postgres role mechanisms and HTTP based authorization.
+
+
+For more detailed info on Postgraphile authentication please check the [docs](https://www.graphile.org/postgraphile/postgresql-schema-design/#authentication-and-authorization).
+
+
+
+##### Store user info and personal data.
+```sql
+create table app_public.person (
+  id               serial primary key,
+  name             text unique not null check (char_length(name) < 80),
+  about            text,
+  created_at       timestamp default now()
+);
+
+comment on table app_public.person is 'A user of the app.';
+comment on column app_public.person.id is 'The primary unique identifier for the person.';
+comment on column app_public.person.name is 'The person’s name.';
+comment on column app_public.person.about is 'A short description about the user, written by the user.';
+comment on column app_public.person.created_at is 'The time this person was created.';
+
+```
+
+Passwords and other sensitive information should go into a separate schema.
+
+```sql
+create table app_private.person (
+  person_id        integer primary key references app_public.person(id) on delete cascade,
+  email            text not null unique check (email ~* '^.+@.+\..+$'),
+  password_hash    text not null
+);
+
+comment on table app_private.person is 'Private information about a person’s account.';
+comment on column app_private.person.person_id is 'The id of the person associated with this account.';
+comment on column app_private.person.email is 'The email address of the person.';
+comment on column app_private.person.password_hash is 'An opaque hash of the person’s password.';
+```
+##### Registering Users
+
+Before a user can log in, they need to have an account in our database. To register a user we are going to implement a Postgres function in PL/pgSQL which will create the user on the 2 different tables. The first will be the user’s profile inserted into app_public.person, and the second will be an account inserted into app_private.person.
+
+The pgcrypto extension should come with your Postgres distribution and gives us access to hashing functions like crypt and gen_salt which were specifically designed for hashing passwords.
+
+```sql
+create extension if not exists "pgcrypto";
+```
+
+Next lets define our registration function
+
+```sql
+create function app_public.register_person(
+  name text,
+  email text,
+  password text
+) returns app_public.person as $$
+declare
+  person app_public.person;
+begin
+  insert into app_public.person (name) values
+    (name)
+    returning * into person;
+
+  insert into app_private.person (person_id, email, password_hash) values
+    (person.id, email, crypt(password, gen_salt('bf')));
+
+  return person;
+end;
+$$ language plpgsql strict security definer;
+
+comment on function app_public.register_person(text, text, text) is 'Registers a single user and creates an account into the app.';
+```
+
+
+
+### Roles
+When a user logs in, we want them to make their queries using a specific PostGraphile role. Using that role we can define rules that restrict what data the user may access.
+
+```sql
+create role app_postgraphile login password 'postgis';
+
+create role app_anonymous;
+grant app_anonymous to app_postgraphile;
+
+create role app_person;
+grant app_person to app_postgraphile;
+```
+##### Logging In
+
+PostGraphile uses [JSON Web Tokens (JWTs)](https://www.graphile.org/postgraphile/postgresql-schema-design/#json-web-tokens) for authorization. We can pass an option to PostGraphile, called `--jwt-token-identifier <identifier>` in the CLI, which takes a composite type identifier. PostGraphile will turn this type into a JWT wherever you see it in the GraphQL output. So let’s define the type we will use for our JWTs:
+
+
+```sql
+create type app_public.jwt_token as (
+  role text,
+  person_id integer,
+  exp bigint
+);
+```
+Next can create the function which will actually return the token JWT as follows
+
+```sql
+create function app_public.authenticate(
+  email text,
+  password text
+) returns app_public.jwt_token as $$
+declare
+  account app_private.person;
+begin
+  select a.* into account
+  from app_private.person as a
+  where a.email = $1;
+
+  if account.password_hash = crypt(password, account.password_hash) then
+    return ('app_person', account.person_id, extract(epoch from (now() + interval '2 days')))::app_public.jwt_token;
+  else
+    return null;
+  end if;
+end;
+$$ language plpgsql strict security definer;
+
+comment on function app_public.authenticate(text, text) is 'Creates a JWT token that will securely identify a person and give them certain permissions. This token expires in 2 days.';
+```
+##### Using the Authorized User
+
+Now that we have the authentication function we can create another function that returns the logged person.
+
+```sql
+create function app_public.current_person() returns app_public.person as $$
+  select *
+  from app_public.person
+  where id = nullif(current_setting('jwt.claims.person_id', true), '')::integer
+$$ language sql stable;
+
+comment on function app_public.current_person() is 'Gets the person who was identified by our JWT.';
+```
+
+##### Grants
+
+Finally we need to set the grants or the Role Based Access Control (RBAC).
+
+```sql
+alter default privileges revoke execute on functions from public;
+
+grant usage on schema app_public to app_anonymous, app_person;
+
+grant select on table app_public.person to app_anonymous, app_person;
+grant update, delete on table app_public.person to app_person;
+
+grant select on table app_public.landcover to app_anonymous, app_person;
+grant select on table app_public.municipality to app_anonymous, app_person;
+grant select on table app_public.population to app_anonymous, app_person;
+grant select on table app_public.srtm to app_anonymous, app_person;
+grant select on table app_public.parcels to app_anonymous, app_person;
+
+grant insert, update, delete on table app_public.parcels to app_person;
+grant usage on sequence app_public.parcels_id_seq to app_person;
+
+grant execute on function app_public.get_landcover(json, real) to app_anonymous, app_person;
+grant execute on function app_public.parcels_area(app_public.parcels) to app_anonymous, app_person;
+grant execute on function app_public.parcels_clc_landcover(app_public.parcels) to app_anonymous, app_person;
+grant execute on function app_public.parcels_srtm(app_public.parcels) to app_anonymous, app_person;
+
+
+grant execute on function app_public.authenticate(text, text) to app_anonymous, app_person;
+grant execute on function app_public.current_person() to app_anonymous, app_person;
+grant execute on function app_public.register_person(text, text, text) to app_anonymous;
+```
+
+Updating the CLI with:
+
+**--connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql"**
+**--default-role app_anonymous**
+**--schema app_public**
+**--jwt-secret keyboard_kitten**
+**--jwt-token-identifier app_public.jwt_token**
+
+
+
+```shell
+postgraphile \
+  --subscriptions \
+  --watch \
+  --dynamic-json \
+  --no-setof-functions-contain-nulls \
+  --no-ignore-rbac \
+  --port 5000 \
+  --show-error-stack=json \
+  --extended-errors hint,detail,errcode \
+  --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
+  --skip-plugins graphile-build:NodePlugin \
+  --simple-collections only \
+  --graphiql "/" \
+  --enhance-graphiql \
+  --allow-explain \
+  --enable-query-batching \
+  --legacy-relations omit \
+  --connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql" \
+  --default-role app_anonymous \
+  --schema app_public \
+  --jwt-secret keyboard_kitten \
+  --jwt-token-identifier app_public.jwt_token
+```
+
+
+Lets now register some users using GraphQL:
+
+```graphql
+mutation m1 {
+  registerPerson(
+    input: {
+      name: "user1"
+      email: "user1@user1.pt"
+      password: "user1@user1.pt"
+    }
+  ) {
+    person {
+      id
+      name
+    }
+  }
+}
+mutation m2 {
+  registerPerson(
+    input: {
+      name: "user2"
+      email: "user2@user2.pt"
+      password: "user2@user2.pt"
+    }
+  ) {
+    person {
+      id
+      name
+    }
+  }
+}
+mutation m3 {
+  registerPerson(
+    input: {
+      name: "user3"
+      email: "user3@user3.pt"
+      password: "user3@user3.pt"
+    }
+  ) {
+    person {
+      id
+      name
+    }
+  }
+}
+```
+
+Now that we have some users registered we can authenticate using:
+
+```graphql
+mutation {
+  authenticate(input: {email: "user1@user1.pt", password: "user1@user1.pt"}) {
+    jwtToken
+  }
+}
+```
+When PostGraphile gets a JWT from an HTTP request’s Authorization header should be:
+
+```graphql
+{
+"Authorization": "Bearer <jwtToken>"
+}
+```
+
+To confirm the auth user we can execute the following query with the correct authorization header.
+```graphql
+query {
+  currentPerson {
+    name
+    id
+  }
+}
+```
+
+### RLS
+RLS allows us to specify access to the data in our Postgres databases on a row level instead of a table level. For more info on RLS please check the official [docs](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+
+```sql
+alter table app_public.person enable row level security;
+alter table app_public.parcels enable row level security;
+
+create policy select_person on app_public.person for select
+  using (true);
+
+create policy select_parcels on app_public.parcels for select
+  using (true);
+```
+
+Now both anonymous users and logged in users can see all of our `app_public.person`. We also want signed in users to be able to only update and delete their own row.
+
+```sql
+create policy update_person on app_public.person for update to app_person
+  using (id = nullif(current_setting('jwt.claims.person_id', true), '')::integer);
+
+create policy delete_person on app_public.person for delete to app_person
+  using (id = nullif(current_setting('jwt.claims.person_id', true), '')::integer);
+```
+
+
+Finaly allow only registered users to insert, update, delete parcels.
+
+```sql
+create policy person_parcels on app_public.parcels for insert to app_person
+  WITH CHECK (true);
+
+create policy person_parcels on app_public.parcels for update to app_person
+  WITH CHECK (true);
+
+create policy person_parcels on app_public.parcels for delete to app_person
+  WITH CHECK (true);
+```
