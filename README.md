@@ -1313,7 +1313,7 @@ Finally **only allow registered users** to insert, update, delete parcels.
 
 ```sql
 create policy person_parcels_insert on app_public.parcels for insert to app_person
-  USING (true);
+  WITH CHECK (true);
 
 create policy person_parcels_update on app_public.parcels for update to app_person
   USING (true);
