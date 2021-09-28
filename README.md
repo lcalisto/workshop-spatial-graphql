@@ -1294,7 +1294,7 @@ create policy delete_person on app_public.person for delete to app_person
   using (id = nullif(current_setting('jwt.claims.person_id', true), '')::integer);
 ```
 
-Lets update our current user
+Lets update our current `user 1`
 
 ```graphql
 mutation {
