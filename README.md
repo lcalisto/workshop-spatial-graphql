@@ -380,7 +380,7 @@ postgraphile \
   --schema app_public
 ```
 
-During this workshop we wont use relay connections anymore. You can remove them using `--simple-collections only` or just copy the CLI command from the [beginning](#Running-the-server-as-CLI).
+During this workshop we wont use cursor connections anymore. You can remove them using `--simple-collections only` or just copy the CLI command from the [beginning](#Running-the-server-as-CLI).
 ### Note for Library usage
 
 If you, just like me, you prefer to use simple connections but you don't like `List` suffix on the simple collections, you can remove it using `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
@@ -638,7 +638,7 @@ comment on column app_public.landcover.label3 is E'@name label';
 Moving forward on our schema simplification lets now rename a constrain (relationship) in order to have clear names. Please run the following example and check what happens in your schema, inside `population` and `municipality`.
 
 ```sql
-comment on constraint population_dico_fkey on app_public.population_stat is
+comment on constraint population_dico_fkey on app_public.population is
   E'@foreignFieldName population\n@fieldName municipality\nDocumentation here.';
 ```
 ----------
@@ -670,17 +670,12 @@ GraphQL query:
 }
 ```
 
-**Also works with filters** Make sure you removed `--no-ignore-indexes` from **PostGraphile** executable.
+**Also works with filters** Make sure you don't have  `--no-ignore-indexes` option active.
 ```graphql
 {
   parcelsList(filter: {area: {greaterThan: 300000}}) {
     name
     area
-    srtmList {
-      min
-      max
-      mean
-    }
   }
 }
 ```
@@ -783,7 +778,7 @@ With filters:
 
 
 
-**To discuss:** What is the difference between a computed column and a PostgreSQL generated column?
+**To discuss:** What is the difference between a **computed column** and a PostgreSQL **generated column**?
 ### 6.2 - Custom queries
 
 While Computed columns generate one extra field on a specific connection, custom queries can add root-level Query fields to our GraphQL schema. This can be quite important while generating our API specially for processing algorithms.
@@ -931,7 +926,7 @@ In order to update we must provide a **patch** as an input. Lets change the name
 
 ```graphql
 mutation {
-  updateParcel(input: { id: 10, patch: { name: "Garden in Lisbon" } }) {
+  updateParcel(input: { id: 5, patch: { name: "Garden in Lisbon" } }) {
     parcel {
       id
       name
@@ -958,7 +953,7 @@ To delete the procedure is very similar. In this case we only need to provide as
 
 ```graphql
 mutation {
-  deleteParcel(input: { id: 10 }) {
+  deleteParcel(input: { id: 5 }) {
     parcel {
       id
       name
@@ -975,6 +970,9 @@ query {
   }
 }
 ```
+
+**To discuss**: Comment the current API in terms of security and possible vulnerability.
+
 ----------
 
 ## 8 - Authentication
@@ -984,9 +982,9 @@ Authentication and authorization is incredibly important whenever you build an a
 
 For more detailed info on Postgraphile authentication please check the [docs](https://www.graphile.org/postgraphile/postgresql-schema-design/#authentication-and-authorization).
 
+We will implement a very basic Auth, later you can use this technique and functions to add more complex rules.
 
-
-##### Store user info and personal data.
+#### Store user info and personal data.
 ```sql
 create table app_public.person (
   id               serial primary key,
@@ -1017,7 +1015,7 @@ comment on column app_private.person.person_id is 'The id of the person associat
 comment on column app_private.person.email is 'The email address of the person.';
 comment on column app_private.person.password_hash is 'An opaque hash of the person’s password.';
 ```
-##### Registering Users
+#### Registering Users
 
 Before a user can log in, they need to have an account in our database. To register a user we are going to implement a Postgres function in PL/pgSQL which will create the user on the 2 different tables. The first will be the user’s profile inserted into app_public.person, and the second will be an account inserted into app_private.person.
 
@@ -1027,7 +1025,7 @@ The pgcrypto extension should come with your Postgres distribution and gives us 
 create extension if not exists "pgcrypto";
 ```
 
-Next lets define our registration function
+Next lets define our registration function using a **Custom mutation**
 
 ```sql
 create function app_public.register_person(
@@ -1052,21 +1050,24 @@ $$ language plpgsql strict security definer;
 comment on function app_public.register_person(text, text, text) is 'Registers a single user and creates an account into the app.';
 ```
 
-
+Now we have a mutation that alow us to register users but we are using a superuser in Postgraphile CLI. Lets **not register any user a moment** and check the Roles first. 
 
 ### Roles
 When a user logs in, we want them to make their queries using a specific PostGraphile role. Using that role we can define rules that restrict what data the user may access.
 
 ```sql
+drop role app_postgraphile;
 create role app_postgraphile login password 'postgis';
 
+drop role app_anonymous;
 create role app_anonymous;
 grant app_anonymous to app_postgraphile;
 
+drop role app_person;
 create role app_person;
 grant app_person to app_postgraphile;
 ```
-##### Logging In
+#### Logging In
 
 PostGraphile uses [JSON Web Tokens (JWTs)](https://www.graphile.org/postgraphile/postgresql-schema-design/#json-web-tokens) for authorization. We can pass an option to PostGraphile, called `--jwt-token-identifier <identifier>` in the CLI, which takes a composite type identifier. PostGraphile will turn this type into a JWT wherever you see it in the GraphQL output. So let’s define the type we will use for our JWTs:
 
@@ -1078,7 +1079,7 @@ create type app_public.jwt_token as (
   exp bigint
 );
 ```
-Next can create the function which will actually return the token JWT as follows
+Next can create a **Custom mutation** which will actually return the token JWT as follows
 
 ```sql
 create function app_public.authenticate(
@@ -1102,9 +1103,9 @@ $$ language plpgsql strict security definer;
 
 comment on function app_public.authenticate(text, text) is 'Creates a JWT token that will securely identify a person and give them certain permissions. This token expires in 2 days.';
 ```
-##### Using the Authorized User
+#### Using the Authorized User
 
-Now that we have the authentication function we can create another function that returns the logged person.
+Now that we have the authentication function we can create another useful function that returns the logged person.
 
 ```sql
 create function app_public.current_person() returns app_public.person as $$
@@ -1116,7 +1117,7 @@ $$ language sql stable;
 comment on function app_public.current_person() is 'Gets the person who was identified by our JWT.';
 ```
 
-##### Grants
+#### Grants
 
 Finally we need to set the grants or the Role Based Access Control (RBAC).
 
@@ -1272,7 +1273,18 @@ create policy select_parcels on app_public.parcels for select
   using (true);
 ```
 
-Now both anonymous users and logged in users can see all of our `app_public.person`. We also want signed in users to be able to only update and delete their own row.
+Lets list all registered users.
+
+```graphql
+{
+  peopleList{
+    id
+    name
+  }
+}
+```
+
+Now both anonymous users and logged in users can see all of our `app_public.person`. We also want registered users to be able to only update and delete their own row.
 
 ```sql
 create policy update_person on app_public.person for update to app_person
@@ -1282,16 +1294,53 @@ create policy delete_person on app_public.person for delete to app_person
   using (id = nullif(current_setting('jwt.claims.person_id', true), '')::integer);
 ```
 
+Lets update our current user
 
-Finaly allow only registered users to insert, update, delete parcels.
+```graphql
+mutation {
+  updatePerson(input: { id: 7, patch: { about: "Updated user" } }) {
+    person {
+      id
+      name
+      about
+    }
+  }
+}
+
+```
+
+Finally **only allow registered users** to insert, update, delete parcels.
 
 ```sql
-create policy person_parcels on app_public.parcels for insert to app_person
-  WITH CHECK (true);
+create policy person_parcels_insert on app_public.parcels for insert to app_person
+  USING (true);
 
-create policy person_parcels on app_public.parcels for update to app_person
-  WITH CHECK (true);
+create policy person_parcels_update on app_public.parcels for update to app_person
+  USING (true);
 
-create policy person_parcels on app_public.parcels for delete to app_person
-  WITH CHECK (true);
+create policy person_parcels_delete on app_public.parcels for delete to app_person
+  USING (true);
+```
+
+Lets now get all parcels and try to update one. Make sure you are using the proper **Authorization header**.
+
+```graphql
+query getParcels {
+  parcelsList {
+    id
+    name
+    comments
+  }
+}
+
+mutation updateParcel {
+  updateParcel(input: { id: 3, patch: { comments: "A stadium in Lisbon" } }) {
+    parcel {
+      id
+      name
+      comments
+    }
+  }
+}
+
 ```
