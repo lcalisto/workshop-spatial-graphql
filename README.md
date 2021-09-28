@@ -1185,7 +1185,7 @@ postgraphile \
 ```
 
 
-Lets now register some users using GraphQL:
+Lets now register some users using our previous custom mutation:
 
 ```graphql
 mutation m1 {
