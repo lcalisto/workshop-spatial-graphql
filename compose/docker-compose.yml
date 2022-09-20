@@ -29,6 +29,9 @@ services:
           - network
       ports:
           - 5433:5000
+      # In case you need to connect to your local postgres instance
+      extra_hosts:
+          - "host.docker.internal:host-gateway"
       command: ["--connection", "${DATABASE_URL}", "--subscriptions", "--watch", "--dynamic-json", "--no-setof-functions-contain-nulls", "--no-ignore-rbac", "--port", "5000", "--show-error-stack=json", "--extended-errors", "hint,detail,errcode", "--append-plugins", "@graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis", "--skip-plugins", "graphile-build:NodePlugin", "--simple-collections", "only", "--graphiql", "/", "--enhance-graphiql", "--allow-explain", "--enable-query-batching", "--legacy-relations", "omit", "--schema", "app_public"]
 networks:
   network:
