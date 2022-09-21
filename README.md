@@ -986,7 +986,7 @@ We will implement a very basic Auth, later you can use this technique and functi
 
 #### Store user info and personal data.
 ```sql
-create table app_public.person (
+create table IF NOT EXISTS app_public.person (
   id               serial primary key,
   name             text unique not null check (char_length(name) < 80),
   about            text,
@@ -1004,7 +1004,7 @@ comment on column app_public.person.created_at is 'The time this person was crea
 Passwords and other sensitive information should go into a separate schema.
 
 ```sql
-create table app_private.person (
+create table IF NOT EXISTS app_private.person (
   person_id        integer primary key references app_public.person(id) on delete cascade,
   email            text not null unique check (email ~* '^.+@.+\..+$'),
   password_hash    text not null
@@ -1056,14 +1056,14 @@ Now we have a mutation that alow us to register users but we are using a superus
 When a user logs in, we want them to make their queries using a specific PostGraphile role. Using that role we can define rules that restrict what data the user may access.
 
 ```sql
-drop role app_postgraphile;
+drop role IF EXISTS app_postgraphile;
 create role app_postgraphile login password 'postgis';
 
-drop role app_anonymous;
+drop role IF EXISTS app_anonymous;
 create role app_anonymous;
 grant app_anonymous to app_postgraphile;
 
-drop role app_person;
+drop role IF EXISTS app_person;
 create role app_person;
 grant app_person to app_postgraphile;
 ```
