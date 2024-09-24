@@ -36,6 +36,7 @@ In order to move forward make sure you have installed:
 - **NodeJS** v14.x.x
 - **npm**
 - **pgAdmin4** (recommended)
+- **QGIS** (optional, for exploring spatial features)
 
 For install procedures for local postgreSQL and pgadmin: [here](Requirements.md)
 
@@ -124,7 +125,7 @@ More info about plugins can be found on [PostGraphile community plugins](https:/
 
 ### Running the server as CLI
 
-Now that we have installed the CLI we will run it as following
+Now that we have installed the CLI we will run it as following. Don't forget to replace the username, password and database_name.
 
 ```shell
 postgraphile \
@@ -144,8 +145,14 @@ postgraphile \
   --allow-explain \
   --enable-query-batching \
   --legacy-relations omit \
-  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
+  --connection "postgres://username:password@localhost/database_name" \
   --schema app_public
+```
+
+For Windows users, run the following command instead:
+
+```shell
+postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain-nulls --no-ignore-rbac --port 5000 --show-error-stack=json --extended-errors hint,detail,errcode --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis --skip-plugins graphile-build:NodePlugin --simple-collections only --graphiql "/" --enhance-graphiql --allow-explain --enable-query-batching --legacy-relations omit --connection "postgres://username:password@localhost/database_name" --schema app_public
 ```
 
 This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above. 
@@ -153,6 +160,17 @@ This will generate a minimal schema, since we are omitting the NodePlugin, with 
 ### Explore the interface and current schema
 
 Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE.
+
+PostGraphile automatically adds a number of elements to the generated GraphQL schema based on the tables and columns found in the inspected schema. For the tables from the app-public schema, it create:
+
+- **singularized and pluralarized table types**, the singularized type, such as `landcover`, can be used to query a single record by the primary key, in this case, `id`. The pluralarized type, such as `landcoverList`, can be used to query multiple records.
+
+- **related table types**, such as `munucipalityByDico`.
+  
+- **the root Query type**, 
+
+
+![graphql](raw_data/graphql_interface.png)
 
 ### First queries
 
@@ -242,7 +260,7 @@ Now that we setup our inital API let's query it:
 ```
 ### Spatial queries
 
-Its now time to go spatial! 
+Its now time to go spatial! You can always view the spatial features in **QGIS** by opening the geojson file.
 
 - Get the geometry as geojson and the SRID from the first municipality.
 
@@ -313,6 +331,8 @@ As you might have noticed on the [first queries](#First-queries) we started quer
 ### More queries
 
 - Using **offset**
+
+The following query returns the 10 records after the first 10 records.
 
 ```graphql
 {
@@ -439,9 +459,11 @@ PostGraphile supports rudimentary filtering on connections using a **condition a
 }
 ```
 
+More filter operations can be found [here](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/master/docs/operators.md).
+
 ### Spatial filters
 
-Since we have [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis) we can use spatial filters. Please take some time exploring available geometry filters in Graphiql IDE
+Since we have [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis) we can use spatial filters. Please take some time exploring available geometry filters in Graphiql IDE.
 
 ```graphql
 {
@@ -644,10 +666,10 @@ comment on constraint population_dico_fkey on app_public.population is
 ----------
 ## 6 - Extending the schema
 
-One of the most important capabilities of PostGraphile if the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
+One of the most important capabilities of PostGraphile is the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
 ### 6.1 - Computed columns
 
-From the [docs](https://www.graphile.org/postgraphile/): *"Computed columns" add what appears to be an extra column (field) to the GraphQL table type, but, unlike an actual column, the value for this field is the result of calling a function defined in the PostgreSQL schema. This function will automatically be exposed to the resultant GraphQL schema as a field on the type; it can accept arguments that influence its result, and may return either a scalar, record, list or a set.* computed-columns/)
+From the [docs](https://www.graphile.org/postgraphile/): *"Computed columns" add what appears to be an extra column (field) to the GraphQL table type, but, unlike an actual column, the value for this field is the result of calling a function defined in the PostgreSQL schema. This function will automatically be exposed to the resultant GraphQL schema as a field on the type; it can accept arguments that influence its result, and may return either a scalar, record, list or a set.
 
 #### Parcels area
 
@@ -917,7 +939,11 @@ query {
   }
 }
 ```
-Note that we must use "MultiPolygon" because our datatype is "MultiPolygon". 
+Note that we must use "MultiPolygon" because our datatype is "MultiPolygon". To check the constraints of a table you can use the psql command:
+
+```psql
+\d app_public.parcels
+```
 
 **To discuss:** Is there a way to insert both "MultiPolygon" and "Polygon" GeoJSON?
 #### Update
@@ -1079,7 +1105,7 @@ create type app_public.jwt_token as (
   exp bigint
 );
 ```
-Next can create a **Custom mutation** which will actually return the token JWT as follows
+Next can create a **Custom mutation** which will actually return the token JWT as follows. This function will return null if the user failed to authenticate, and a JWT token if the user succeeds. Returning null could mean that the password was incorrect, a user with their email doesn’t exist, or the client forgot to pass email and/or password arguments. If a user with the provided email does exist, and the provided password checks out with `password_hash` in `app_private.person`, then we return an instance of `app_public.jwt_token` which will then be converted into an actual JWT by PostGraphile.
 
 ```sql
 create function app_public.authenticate(
@@ -1182,6 +1208,12 @@ postgraphile \
   --schema app_public \
   --jwt-secret keyboard_kitten \
   --jwt-token-identifier app_public.jwt_token
+```
+
+For Windows users use the following command instead:
+
+```shell
+postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain-nulls --no-ignore-rbac --port 5000 --show-error-stack=json --extended-errors hint,detail,errcode --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis --skip-plugins graphile-build:NodePlugin --simple-collections only --graphiql "/" --enhance-graphiql --allow-explain --enable-query-batching --legacy-relations omit --connection "postgres://app_postgraphile:postgis@localhost/myapp" --default-role app_anonymous --schema app_public --jwt-secret keyboard_kitten --jwt-token-identifier app_public.jwt_token
 ```
 
 
