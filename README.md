@@ -36,6 +36,7 @@ In order to move forward make sure you have installed:
 - **NodeJS** v14.x.x
 - **npm**
 - **pgAdmin4** (recommended)
+- **QGIS** (optional, for exploring spatial features)
 
 For install procedures for local postgreSQL and pgadmin: [here](Requirements.md)
 
@@ -91,6 +92,8 @@ According to the documentation PostGraphile is formed of three forms of usage:
 
 You can check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
 
+The command provided in this document is made for Linux/macOS. If you're using Windows, don't use "\" and start a new line. Instead, simply add a space.
+
 
 Install PostGraphile globally via npm:
 
@@ -144,15 +147,28 @@ postgraphile \
   --allow-explain \
   --enable-query-batching \
   --legacy-relations omit \
-  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
+  --connection "postgres://username:password@localhost/database_name" \
   --schema app_public
 ```
+
+Don't forget to replace the username, password and database_name.
 
 This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above. 
 
 ### Explore the interface and current schema
 
 Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE.
+
+PostGraphile automatically adds a number of elements to the generated GraphQL schema based on the tables and columns found in the inspected schema. For the tables from the app-public schema, it create:
+
+- **singularized and pluralarized table types**, the singularized type, such as `landcover`, can be used to query a single record by the primary key, in this case, `id`. The pluralarized type, such as `landcoverList`, can be used to query multiple records.
+
+- **related table types**.
+  
+- **the root Query type**.
+
+
+![graphql](raw_data/graphql_interface.png)
 
 ### First queries
 
@@ -327,6 +343,8 @@ As you might have noticed on the [first queries](#First-queries) we started quer
   }
 }
 ```
+This query returns the 10 records after the first 10 records.
+
 
 - Using **last**
 
@@ -438,6 +456,8 @@ PostGraphile supports rudimentary filtering on connections using a **condition a
   }
 }
 ```
+
+More filter operations can be found [here](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/master/docs/operators.md).
 
 ### Spatial filters
 
@@ -644,7 +664,7 @@ comment on constraint population_dico_fkey on app_public.population is
 ----------
 ## 6 - Extending the schema
 
-One of the most important capabilities of PostGraphile if the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
+One of the most important capabilities of PostGraphile is the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
 ### 6.1 - Computed columns
 
 From the [docs](https://www.graphile.org/postgraphile/): *"Computed columns" add what appears to be an extra column (field) to the GraphQL table type, but, unlike an actual column, the value for this field is the result of calling a function defined in the PostgreSQL schema. This function will automatically be exposed to the resultant GraphQL schema as a field on the type; it can accept arguments that influence its result, and may return either a scalar, record, list or a set.* computed-columns/)
@@ -917,7 +937,11 @@ query {
   }
 }
 ```
-Note that we must use "MultiPolygon" because our datatype is "MultiPolygon". 
+Note that we must use "MultiPolygon" because our datatype is "MultiPolygon". To check the constraints of a table you can use the psql command:
+
+```psql
+\d app_public.parcels
+```
 
 **To discuss:** Is there a way to insert both "MultiPolygon" and "Polygon" GeoJSON?
 #### Update
