@@ -1105,7 +1105,7 @@ create type app_public.jwt_token as (
   exp bigint
 );
 ```
-Next can create a **Custom mutation** which will actually return the token JWT as follows. This function will return null if the user failed to authenticate, and a JWT token if the user succeeds. Returning null could mean that the password was incorrect, a user with their email doesn’t exist, or the client forgot to pass email and/or password arguments If a user with the provided email does exist, and the provided password checks out with password_hash in app_private.person, then we return an instance of app_public.jwt_token which will then be converted into an actual JWT by PostGraphile.
+Next can create a **Custom mutation** which will actually return the token JWT as follows. This function will return null if the user failed to authenticate, and a JWT token if the user succeeds. Returning null could mean that the password was incorrect, a user with their email doesn’t exist, or the client forgot to pass email and/or password arguments. If a user with the provided email does exist, and the provided password checks out with `password_hash` in `app_private.person`, then we return an instance of `app_public.jwt_token` which will then be converted into an actual JWT by PostGraphile.
 
 ```sql
 create function app_public.authenticate(
