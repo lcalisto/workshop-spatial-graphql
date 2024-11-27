@@ -33,7 +33,7 @@ If you are new to GraphQL it might be good to check the official documentation: 
 In order to move forward make sure you have installed:
 
 - **PostgreSQL** with **PostGIS** (you can use docker)
-- **NodeJS** v14.x.x
+- **NodeJS**
 - **npm**
 - **pgAdmin4** (recommended)
 - **QGIS** (optional, for exploring spatial features)
