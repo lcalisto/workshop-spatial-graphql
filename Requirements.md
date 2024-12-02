@@ -5,7 +5,7 @@ This is a basic requirements install for the workshop. Software install and requ
 ## Table of contents
 
 1) [PostgreSQL with PostGIS extension](#1---postgresql with postgis extension)
-2) [NodeJS v14.x.x](#2---nodejs-v14.x.x)
+2) [NodeJS ](#2---nodejs)
 3) Pgadmin4(#3---pgadmin4)
 
 ## 1 - PostgreSQL with Postgis extension

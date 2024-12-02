@@ -260,7 +260,7 @@ Now that we setup our inital API let's query it:
 ```
 ### Spatial queries
 
-Its now time to go spatial! You can always view the spatial features in **QGIS** by opening the geojson file.
+Its now time to go spatial! You can always view the spatial features in [https://geojson.io](https://geojson.io) Alternatively you can save the geometry as a geojson file and use **QGIS** by opening the geojson file.
 
 - Get the geometry as geojson and the SRID from the first municipality.
 
