@@ -348,22 +348,6 @@ The following query returns the 10 records after the first 10 records.
 }
 ```
 
-- Using **last**
-
-```graphql
-{
-  municipalitiesList(last:10){
-    name
-    district
-    populationByDico{
-      femaleResidents
-      maleResidents
-      households
-    }
-  }
-}
-```
-
 #### Cursor Connections
 
 In order to have some simplicity we deactivated cursor connections these type of connections come from the [Cursor Connections Specification](https://relay.dev/graphql/connections.htm) for more information you should read this specification since they can be quite useful. Cursor connections allows perform cursor-based pagination, and is seen as a GraphQL best practice.
