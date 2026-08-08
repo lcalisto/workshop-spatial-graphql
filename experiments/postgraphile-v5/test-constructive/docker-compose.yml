@@ -1,0 +1,27 @@
+name: pgv5a
+services:
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_DB: workshop_graphql
+      POSTGRES_PASSWORD: test
+    volumes:
+      # Reuses the workshop's own dump; no copy needed.
+      - ../../../compose/db/init/00-initial-db.sql.gz:/docker-entrypoint-initdb.d/00-initial-db.sql.gz:ro
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U postgres -d workshop_graphql -tAc 'SELECT 1 FROM app_public.municipality LIMIT 1' | grep -q 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  graphql:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:test@db/workshop_graphql
+    ports:
+      - "5556:5000"
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy

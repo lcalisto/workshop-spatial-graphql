@@ -1,0 +1,5 @@
+# Third-party source fetched on demand by get-pr66-src.sh (pinned to a commit).
+# Rerun the script to restore it; no need to commit it here.
+graphile-postgis-fzy-v5-dargmuesli/
+*.tar.gz
+.DS_Store

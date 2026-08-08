@@ -1,0 +1,9 @@
+{
+  "query": "query LisbonArea($poly: GeoJSON!) { intersecting: allMunicipalities(where: { geom: { intersects: $poly } }) { totalCount nodes { name district } } bbox: allMunicipalities(where: { geom: { bboxIntersects2D: $poly } }) { totalCount nodes { name } } }",
+  "variables": {
+    "poly": {
+      "type": "Polygon",
+      "coordinates": [[[-9.25,38.70],[-9.18,38.70],[-9.18,38.74],[-9.25,38.74],[-9.25,38.70]]]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+*.log
+*.tar.gz
+graphile-postgis-fzy-v5-dargmuesli/node_modules/
+graphile-postgis-fzy-v5-dargmuesli/dist/

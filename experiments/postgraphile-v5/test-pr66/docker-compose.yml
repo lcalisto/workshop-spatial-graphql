@@ -1,0 +1,49 @@
+name: pgv5b
+services:
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_DB: workshop_graphql
+      POSTGRES_PASSWORD: test
+    volumes:
+      # Reuses the workshop's own dump; no copy needed.
+      - ../../../compose/db/init/00-initial-db.sql.gz:/docker-entrypoint-initdb.d/00-initial-db.sql.gz:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d workshop_graphql"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  # PR #66 plugin built from source, against the postgraphile version its lockfile targets.
+  graphql:
+    build:
+      context: .
+      dockerfile: graphql/Dockerfile
+      args:
+        POSTGRAPHILE_SPEC: "postgraphile@5.0.0-rc.7"
+        DATAPLAN_PG_SPEC: ""
+    environment:
+      DATABASE_URL: postgres://postgres:test@db:5432/workshop_graphql
+    ports:
+      - "5557:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Second variant: same plugin build, but postgraphile@latest (5.1.x GA).
+  # Run with: docker compose --profile latest up -d --build
+  graphql_latest:
+    profiles: ["latest"]
+    build:
+      context: .
+      dockerfile: graphql/Dockerfile
+      args:
+        POSTGRAPHILE_SPEC: "postgraphile@latest"
+        DATAPLAN_PG_SPEC: ""
+    environment:
+      DATABASE_URL: postgres://postgres:test@db:5432/workshop_graphql
+    ports:
+      - "5558:5000"
+    depends_on:
+      db:
+        condition: service_healthy
