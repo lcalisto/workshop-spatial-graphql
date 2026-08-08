@@ -1,4 +1,4 @@
-# Adapted from https://www.graphile.org/postgraphile/running-postgraphile-in-docker/
+# Adapted from https://postgraphile.org/postgraphile/4/running-postgraphile-in-docker/
 services:
   # db:
   #   container_name: workshop-spatial-db

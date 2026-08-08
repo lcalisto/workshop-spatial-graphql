@@ -2,6 +2,8 @@
 
 ### This workshop aims to explain and exemplify the use of Postgraphile and PostgreSQL to generate a spatial GraphQL API.
 
+This workshop is part of the official programme of [FOSS4G 2026 in Hiroshima](https://talks.osgeo.org/foss4g-2026-workshop/talk/Y7TFHR/) (31 August 2026) and previously ran at FOSS4G 2021 (Buenos Aires, online) and FOSS4G 2024 (Belém).
+
 ----------
 ## Table of contents
 
@@ -44,7 +46,7 @@ For install procedures for local postgreSQL and pgadmin: [here](Requirements.md)
 
 ## 1 - Create and restore a PostgreSQL database
 
-In order to start the workshop we will use an existing database. The ideia is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
+In order to start the workshop we will use an existing database. The idea is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
 
 Using **pgAdmin** please create a new, empty database and then restore it using the following file [initial_db.backup](./raw_data/initial_db.backup) into the new recently created database.
 
@@ -55,7 +57,7 @@ After restoring the DB you will see 4 tables and 3 schemas:
 - **municipality**, Spatial table with portuguese municipalities.
 - **population**, Non-spatial table with portuguese population per municipality;
 - **parcels**, Spatial table used to collect polygons during field campaign;
-- **landcover**, Spatial (vector) table with landcover for Lisbon region from [Corine 2018](https://land.copernicus.eu/pan-european/corine-land-cover/clc2018)
+- **landcover**, Spatial (vector) table with landcover for Lisbon region from [Corine 2018](https://land.copernicus.eu/en/products/corine-land-cover/clc2018)
 - **srtm**, Spatial (raster) table with SRTM for Lisbon region. 
 
 
@@ -63,7 +65,7 @@ After restoring the DB you will see 4 tables and 3 schemas:
 
 #### Schemas
 
-As mentioned [here](https://www.graphile.org/postgraphile/namespaces) 
+As mentioned [here](https://postgraphile.org/postgraphile/4/namespaces/) 
 
 - **app_public**, Tables and functions to be exposed to GraphQL (or any other system) - it's your public interface. This is the main part of your database.
 - **app_private**, No-one should be able to read this without a SECURITY DEFINER function letting them selectively do things. This is where you store passwords (bcrypted), access tokens (hopefully encrypted), etc.
@@ -74,7 +76,7 @@ As mentioned [here](https://www.graphile.org/postgraphile/namespaces)
 
 ## 2 - Using PostGraphile
 
-In order to implement a spatial GraphQL API we will make use of PostGraphile (https://www.graphile.org). If you never used PostGraphile we recommend to check its [documentation](https://www.graphile.org/postgraphile/introduction). We also recommend these cheatsheets: https://learn.graphile.org/ 
+In order to implement a spatial GraphQL API we will make use of PostGraphile (https://www.graphile.org). If you never used PostGraphile we recommend to check its [documentation](https://postgraphile.org/postgraphile/4/). We also recommend these cheatsheets: https://learn.graphile.org/ 
 
 Part of this workshop was based on PostGraphile docs.
 
@@ -90,7 +92,7 @@ According to the documentation PostGraphile is formed of three forms of usage:
 
 **At this workshop we will use mainly the CLI**. Eventually, if we have time, we'll show a very basic library usage with NodeJS and Express.
 
-You can check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
+You can check the official docs for more information on how to use the CLI, https://postgraphile.org/postgraphile/4/usage-cli/
 
 
 Install PostGraphile globally via npm. **Note:** PostGraphile v5 is now the latest major version, with a different CLI and plugin system; this workshop targets the v4 line, so all installs below are pinned to v4-compatible versions.
@@ -100,7 +102,7 @@ npm install -g postgraphile@^4
 ```
 
 ### Plugins
-PostGraphile can be customized using plugins. You can find more info about this on [GraphQL Schema Plugins](https://www.graphile.org/postgraphile/extending/).
+PostGraphile can be customized using plugins. You can find more info about this on [GraphQL Schema Plugins](https://postgraphile.org/postgraphile/4/extending/).
 
 We will make use of the following plugins:
 
@@ -119,7 +121,7 @@ postgraphile-plugin-connection-filter@^2 \
 postgraphile-plugin-connection-filter-postgis@1.0.0-alpha.6
 ```
 
-More info about plugins can be found on [PostGraphile community plugins](https://www.graphile.org/postgraphile/community-plugins)
+More info about plugins can be found on [PostGraphile community plugins](https://postgraphile.org/postgraphile/4/community-plugins/)
 
 ----------
 
@@ -161,11 +163,11 @@ This will generate a minimal schema, since we are omitting the NodePlugin, with 
 
 Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE.
 
-PostGraphile automatically adds a number of elements to the generated GraphQL schema based on the tables and columns found in the inspected schema. For the tables from the app-public schema, it create:
+PostGraphile automatically adds a number of elements to the generated GraphQL schema based on the tables and columns found in the inspected schema. For the tables from the app-public schema, it creates:
 
-- **singularized and pluralarized table types**, the singularized type, such as `landcover`, can be used to query a single record by the primary key, in this case, `id`. The pluralarized type, such as `landcoverList`, can be used to query multiple records.
+- **singularized and pluralized table types**, the singularized type, such as `landcover`, can be used to query a single record by the primary key, in this case, `id`. The pluralized type, such as `landcoverList`, can be used to query multiple records.
 
-- **related table types**, such as `munucipalityByDico`.
+- **related table types**, such as `municipalityByDico`.
   
 - **the root Query type**, 
 
@@ -260,7 +262,7 @@ Now that we setup our inital API let's query it:
 ```
 ### Spatial queries
 
-Its now time to go spatial! You can always view the spatial features in [https://geojson.io](https://geojson.io) Alternatively you can save the geometry as a geojson file and use **QGIS** by opening the geojson file.
+It's now time to go spatial! You can always view the spatial features in [https://geojson.io](https://geojson.io) Alternatively you can save the geometry as a geojson file and use **QGIS** by opening the geojson file.
 
 - Get the geometry as geojson and the SRID from the first municipality.
 
@@ -294,7 +296,7 @@ Its now time to go spatial! You can always view the spatial features in [https:/
 
 #### Geometry decomposition.
 
-PostGraphile automatically generates sub geometries, the next query shows how that can be achived out of the box. Parcels geom column is MultiPolygon data type, therefore we can generate all sub-geometries that compose MultiPolygon.
+PostGraphile automatically generates sub geometries, the next query shows how that can be achieved out of the box. Parcels geom column is MultiPolygon data type, therefore we can generate all sub-geometries that compose MultiPolygon.
 
 ```graphql
 {
@@ -326,7 +328,7 @@ PostGraphile automatically generates sub geometries, the next query shows how th
 
 We will not focus on this workshop on pagination but it is a very important concept in GraphQL, we recommend reading https://graphql.org/learn/pagination/ to better understand how pagination can be handled in GraphQL.
 
-As you might have noticed on the [first queries](#First-queries) we started querying one municipality and end up with plural connections which are part of the pagination concept. 
+As you might have noticed on the [first queries](#first-queries) we started querying one municipality and end up with plural connections which are part of the pagination concept. 
 
 ### More queries
 
@@ -384,7 +386,7 @@ postgraphile \
   --schema app_public
 ```
 
-During this workshop we wont use cursor connections anymore. You can remove them using `--simple-collections only` or just copy the CLI command from the [beginning](#Running-the-server-as-CLI).
+During this workshop we won't use cursor connections anymore. You can remove them using `--simple-collections only` or just copy the CLI command from the [beginning](#running-the-server-as-cli).
 ### Note for Library usage
 
 If you, just like me, you prefer to use simple connections but you don't like `List` suffix on the simple collections, you can remove it using `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
@@ -443,7 +445,7 @@ PostGraphile supports rudimentary filtering on connections using a **condition a
 }
 ```
 
-More filter operations can be found [here](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/master/docs/operators.md).
+More filter operations can be found [here](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/main/docs/operators.md).
 
 ### Spatial filters
 
@@ -548,7 +550,7 @@ query query1 ($input1: GeoJSON) {
 }
 ```
 
-Now we need to insert the variable, to achive that please insert below code into QUERY VARIABLES 
+Now we need to insert the variable, to achieve that please insert below code into QUERY VARIABLES 
 
 ```JSON
 {"input1":  {
@@ -598,9 +600,9 @@ As we can see Lisbon Airport is on 2 Municipalities: Lisbon and Loures.
 ----------
 ## 5 - Smart tags
 
-Its possible to customise PostGraphile GraphQL schema by using tags on our database tables, columns, functions etc. These can rename, omit, etc from the GraphQL schema. In other words, it allow us to change the GraphQL schema without changing the database data model.
+It's possible to customise PostGraphile GraphQL schema by using tags on our database tables, columns, functions etc. These can rename, omit, etc from the GraphQL schema. In other words, it allows us to change the GraphQL schema without changing the database data model.
 
-More information on Smart tags and how to use them can be found here: https://www.graphile.org/postgraphile/smart-tags/
+More information on Smart tags and how to use them can be found here: https://postgraphile.org/postgraphile/4/smart-tags/
 
 #### Omit
 Using PgAdmin lets run the following SQL code using PgAdmin. Check what happens on the GraphQL schema.
@@ -641,7 +643,7 @@ comment on column app_public.landcover.label3 is E'@name label';
 ```
 
 
-Moving forward on our schema simplification lets now rename a constrain (relationship) in order to have clear names. Please run the following example and check what happens in your schema, inside `population` and `municipality`.
+Moving forward on our schema simplification lets now rename a constraint (relationship) in order to have clear names. Please run the following example and check what happens in your schema, inside `population` and `municipality`.
 
 ```sql
 comment on constraint population_dico_fkey on app_public.population is
@@ -653,7 +655,7 @@ comment on constraint population_dico_fkey on app_public.population is
 One of the most important capabilities of PostGraphile is the ability to extend GraphQL schema using functions. This gives us the ability to use the power of PostgreSQL & PostGIS to generate any processing algorithms.
 ### 6.1 - Computed columns
 
-From the [docs](https://www.graphile.org/postgraphile/): *"Computed columns" add what appears to be an extra column (field) to the GraphQL table type, but, unlike an actual column, the value for this field is the result of calling a function defined in the PostgreSQL schema. This function will automatically be exposed to the resultant GraphQL schema as a field on the type; it can accept arguments that influence its result, and may return either a scalar, record, list or a set.
+From the [docs](https://postgraphile.org/postgraphile/4/): *"Computed columns" add what appears to be an extra column (field) to the GraphQL table type, but, unlike an actual column, the value for this field is the result of calling a function defined in the PostgreSQL schema. This function will automatically be exposed to the resultant GraphQL schema as a field on the type; it can accept arguments that influence its result, and may return either a scalar, record, list or a set.
 
 #### Parcels area
 
@@ -833,7 +835,7 @@ GraphQL query:
 ## 7 - CRUD Mutations
 
 
-From the [docs](https://www.graphile.org/postgraphile/crud-mutations/): *CRUD stands for "Create, Read, Update, Delete", is a common paradigm in data manipulation APIs; "CRUD Mutations" refer to all but the "R". PostGraphile will automatically add CRUD mutations to the schema for each table; this behaviour can be disabled via the `--disable-default-mutations` CLI setting.*
+From the [docs](https://postgraphile.org/postgraphile/4/crud-mutations/): *CRUD stands for "Create, Read, Update, Delete", is a common paradigm in data manipulation APIs; "CRUD Mutations" refer to all but the "R". PostGraphile will automatically add CRUD mutations to the schema for each table; this behaviour can be disabled via the `--disable-default-mutations` CLI setting.*
 
 According to GraphQL convention, any operation that cause change should be sent explicitly via a mutation. Mutations in GraphQL change data, like inserting data into a database or altering data already in a database.
 
@@ -869,7 +871,7 @@ mutation {
 }
 ```
 
-As we can see PostGraphile automatically reads the DB constrains and transposes it into our GraphQL Schema mutations.
+As we can see PostGraphile automatically reads the DB constraints and transposes them into our GraphQL Schema mutations.
 
 Since ID is automaticaly generated by the DB there's no need for it to appear as a mutation input. Lets omit it with a smart tag:
 
@@ -990,7 +992,7 @@ query {
 Authentication and authorization is incredibly important whenever you build an application. You want your users to be able to login and out of your service, and only edit the content your platform has given them permission to edit. Postgres already has great support for authentication and authorization using a secure role based system, so PostGraphile just bridges the gap between the Postgres role mechanisms and HTTP based authorization.
 
 
-For more detailed info on Postgraphile authentication please check the [docs](https://www.graphile.org/postgraphile/postgresql-schema-design/#authentication-and-authorization).
+For more detailed info on Postgraphile authentication please check the [docs](https://postgraphile.org/postgraphile/4/postgresql-schema-design/#authentication-and-authorization).
 
 We will implement a very basic Auth, later you can use this technique and functions to add more complex rules.
 
@@ -1060,7 +1062,7 @@ $$ language plpgsql strict security definer;
 comment on function app_public.register_person(text, text, text) is 'Registers a single user and creates an account into the app.';
 ```
 
-Now we have a mutation that alow us to register users but we are using a superuser in Postgraphile CLI. Lets **not register any user a moment** and check the Roles first. 
+Now we have a mutation that allows us to register users but we are using a superuser in Postgraphile CLI. Lets **not register any user for a moment** and check the Roles first. 
 
 ### Roles
 When a user logs in, we want them to make their queries using a specific PostGraphile role. Using that role we can define rules that restrict what data the user may access.
@@ -1079,7 +1081,7 @@ grant app_person to app_postgraphile;
 ```
 #### Logging In
 
-PostGraphile uses [JSON Web Tokens (JWTs)](https://www.graphile.org/postgraphile/postgresql-schema-design/#json-web-tokens) for authorization. We can pass an option to PostGraphile, called `--jwt-token-identifier <identifier>` in the CLI, which takes a composite type identifier. PostGraphile will turn this type into a JWT wherever you see it in the GraphQL output. So let’s define the type we will use for our JWTs:
+PostGraphile uses [JSON Web Tokens (JWTs)](https://postgraphile.org/postgraphile/4/postgresql-schema-design/#json-web-tokens) for authorization. We can pass an option to PostGraphile, called `--jwt-token-identifier <identifier>` in the CLI, which takes a composite type identifier. PostGraphile will turn this type into a JWT wherever you see it in the GraphQL output. So let’s define the type we will use for our JWTs:
 
 
 ```sql
@@ -1360,3 +1362,14 @@ mutation updateParcel {
 }
 
 ```
+
+----------
+
+## What about PostGraphile v5?
+
+PostGraphile v5 is the current major version (stable since March 2026), built around the [Grafast](https://grafast.org/) plan-based execution engine, a unified preset/plugin configuration system (`graphile.config.mjs`) and a new GraphiQL IDE (Ruru). This workshop deliberately stays on the battle-tested v4 line because the spatial plugin ecosystem has not fully caught up yet:
+
+- PostGIS support for v5 is being actively ported in [graphile/postgis#66](https://github.com/graphile/postgis/pull/66).
+- There is no v5 equivalent of `postgraphile-plugin-connection-filter-postgis` yet, so the spatial filtering shown in section 4 has no official v5 home for now.
+
+The [experiments/postgraphile-v5](experiments/postgraphile-v5/) folder in this repository contains reproducible Docker test kits that run this workshop's database on PostGraphile v5 with two different PostGIS plugin options, if you want a taste of what is coming. Once the ecosystem stabilises, this workshop will be migrated to v5.
