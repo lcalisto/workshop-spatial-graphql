@@ -1,5 +1,4 @@
 # Adapted from https://www.graphile.org/postgraphile/running-postgraphile-in-docker/
-version: "3.3"
 services:
   # db:
   #   container_name: workshop-spatial-db
@@ -7,6 +6,8 @@ services:
   #   image: workshop-spatial-db
   #   build:
   #     context: ./db
+  #   # postgis/postgis images are amd64-only; required on Apple Silicon hosts
+  #   platform: linux/amd64
   #   volumes:
   #     - db:/var/lib/postgresql/data
   #   env_file:

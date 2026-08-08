@@ -93,10 +93,10 @@ According to the documentation PostGraphile is formed of three forms of usage:
 You can check the official docs for more information on how to use the CLI, https://www.graphile.org/postgraphile/usage-cli/
 
 
-Install PostGraphile globally via npm:
+Install PostGraphile globally via npm. **Note:** PostGraphile v5 is now the latest major version, with a different CLI and plugin system; this workshop targets the v4 line, so all installs below are pinned to v4-compatible versions.
 
 ```shell
-npm install -g postgraphile
+npm install -g postgraphile@^4
 ```
 
 ### Plugins
@@ -113,10 +113,10 @@ In order to install them we need to run:
 
 ```shell
 npm install -g \
-@graphile-contrib/pg-simplify-inflector \
-@graphile/postgis \
-postgraphile-plugin-connection-filter \
-postgraphile-plugin-connection-filter-postgis
+@graphile-contrib/pg-simplify-inflector@^6 \
+@graphile/postgis@^0.2.0 \
+postgraphile-plugin-connection-filter@^2 \
+postgraphile-plugin-connection-filter-postgis@1.0.0-alpha.6
 ```
 
 More info about plugins can be found on [PostGraphile community plugins](https://www.graphile.org/postgraphile/community-plugins)
