@@ -1,0 +1,16 @@
+{
+  "query": "mutation CreateParcel($input: CreateParcelInput!) { createParcel(input: $input) { parcel { rowId name geom { __typename srid geojson } } } }",
+  "variables": {
+    "input": {
+      "parcel": {
+        "name": "pgv5c-test-parcel",
+        "createdBy": "pr66-prototype-test",
+        "comments": "codec-level typmod empirical test",
+        "geom": {
+          "type": "MultiPolygon",
+          "coordinates": [[[[-8.60, 40.63], [-8.59, 40.63], [-8.59, 40.64], [-8.60, 40.64], [-8.60, 40.63]]]]
+        }
+      }
+    }
+  }
+}

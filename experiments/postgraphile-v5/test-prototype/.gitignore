@@ -1,0 +1,5 @@
+# Third-party source fetched on demand by get-prototype-src.sh (pinned to a commit).
+plugin-src/
+*.tar.gz
+*.log
+.DS_Store

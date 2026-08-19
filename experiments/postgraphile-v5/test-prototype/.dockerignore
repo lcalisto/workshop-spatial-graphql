@@ -1,0 +1,4 @@
+*.log
+*.tar.gz
+plugin-src/node_modules/
+plugin-src/dist/

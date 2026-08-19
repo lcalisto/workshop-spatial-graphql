@@ -52,4 +52,14 @@ GRAPHQL_URL=http://localhost:5558/graphql ./run-tests.sh
 docker compose --profile latest down -v
 ```
 
-`pr66-comment-draft.md` holds a draft comment for the PR thread reporting these results.
+## test-prototype
+
+Tests the codec-level typmod prototype (`dargmuesli/graphile-postgis` branch `prototype/crystal-3109-codec-level-typmod`, pinned to `bd0e099`) against the published `postgraphile@5.2.0-aardvark.next-20260811203155` snapshot; results are reported on [graphile/postgis#66](https://github.com/graphile/postgis/pull/66).
+
+```sh
+cd test-prototype
+./get-prototype-src.sh                # fetch plugin source once
+docker compose up -d --wait           # build takes a few minutes; serves on :5560
+./run-tests.sh
+docker compose down -v
+```
