@@ -2,8 +2,6 @@
 
 ### This workshop aims to explain and exemplify the use of Postgraphile and PostgreSQL to generate a spatial GraphQL API.
 
-This workshop is part of the official programme of [FOSS4G 2026 in Hiroshima](https://talks.osgeo.org/foss4g-2026-workshop/talk/Y7TFHR/) (31 August 2026) and previously ran at FOSS4G 2021 (Buenos Aires, online) and FOSS4G 2024 (Belém).
-
 ----------
 ## Table of contents
 
