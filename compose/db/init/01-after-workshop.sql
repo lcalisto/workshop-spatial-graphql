@@ -1,4 +1,9 @@
+-- This file replays all the SQL from the workshop README, in README order.
+-- It is meant to run on a FRESHLY RESTORED database (initial_db.backup /
+-- 00-initial-db.sql.gz). To catch up to a given point of the workshop,
+-- run it from the top down to the "end of section N" marker you need.
 
+-- Section 5 - Smart tags
 comment on table app_public.municipality is E'@omit';
 comment on table app_public.municipality is NULL;
 comment on table app_public.srtm is E'@omit';
@@ -7,6 +12,9 @@ comment on column app_public.landcover.label3 is E'@name label';
 comment on constraint population_dico_fkey on app_public.population is
   E'@foreignFieldName population\n@fieldName municipality\nDocumentation here.';
 
+-- end of section 5
+
+-- Section 6.1 - Computed columns
 create or replace function app_public.parcels_area(p app_public.parcels)
 returns real as $$
   select ST_Area(p.geom,true);
@@ -39,6 +47,9 @@ WITH t AS (
 SELECT (stats).min,(stats).max,(stats).mean FROM t;
 $$ language sql stable;
 
+-- end of section 6.1
+
+-- Section 6.2 - Custom queries
 create or replace function app_public.get_landcover(geometry JSON, distance real DEFAULT NULL)
 returns SETOF app_public.landcover as $$
 declare
@@ -61,15 +72,19 @@ RETURN QUERY
 END;
 $$ language plpgsql stable;
 
+-- end of section 6.2
 
+-- Section 7 - CRUD mutations
 --First lets remove any row without geometry
-DELETE FROM app_public.parcels WHERE geom is NULL; 
+DELETE FROM app_public.parcels WHERE geom is NULL;
 
 ALTER TABLE app_public.parcels ALTER COLUMN geom SET NOT NULL;
 
 comment on column app_public.parcels.id is E'@omit create,update,delete';
 
+-- end of section 7
 
+-- Section 8 - Authentication
 create table IF NOT EXISTS app_public.person (
   id               serial primary key,
   name             text unique not null check (char_length(name) < 80),
@@ -190,6 +205,15 @@ grant execute on function app_public.authenticate(text, text) to app_anonymous, 
 grant execute on function app_public.current_person() to app_anonymous, app_person;
 grant execute on function app_public.register_person(text, text, text) to app_anonymous;
 
+alter table app_public.person enable row level security;
+alter table app_public.parcels enable row level security;
+
+create policy select_person on app_public.person for select
+  using (true);
+
+create policy select_parcels on app_public.parcels for select
+  using (true);
+
 create policy update_person on app_public.person for update to app_person
   using (id = nullif(current_setting('jwt.claims.person_id', true), '')::integer);
 
@@ -205,9 +229,6 @@ create policy person_parcels_update on app_public.parcels for update to app_pers
 
 create policy person_parcels_delete on app_public.parcels for delete to app_person
   USING (true);
-  
-  
- 
- 
 
+-- end of section 8
 
