@@ -5,6 +5,7 @@ Delivery notes for running this workshop with a live group. The [README](README.
 ## Before the session
 
 - Ask the organisers to send attendees the [Before the workshop](README.md#before-the-workshop-try-to-do-this-at-home) checklist about a week in advance; slow venue wifi is the main risk to the schedule.
+- GitHub Codespaces (see the README section) is the rescue path for attendees whose local setup fails on the day: a browser and a GitHub account are enough. It needs steady venue internet and consumes the free Codespaces quota of personal accounts, so treat it as the fallback, not the default.
 - Rehearse the full workshop once on the machine you will present with.
 - Have the [compose](compose/) stack built and running (`docker compose up -d --build`, with the `db` service uncommented). Your workshop database is already using host port 5432, so remap the db service port first, as described in the [compose README](compose/README.md). It is your safety net: a finished, working API to demo from if live coding goes wrong, and the backend for the section 8 teaser below.
 - Keep [compose/db/init/01-after-workshop.sql](compose/db/init/01-after-workshop.sql) at hand; running it down to an "end of section N" marker rescues any attendee whose database drifted.

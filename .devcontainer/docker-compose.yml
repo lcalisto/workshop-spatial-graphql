@@ -15,6 +15,8 @@ services:
 
   db:
     image: postgis/postgis:17-3.5-alpine
+    # image is amd64 only; this line lets the devcontainer also run locally on Apple Silicon
+    platform: linux/amd64
     environment:
       POSTGRES_DB: workshop_graphql
       POSTGRES_USER: postgres

@@ -21,7 +21,20 @@
         "ms-azuretools.vscode-docker",
         "mtxr.sqltools",
         "mtxr.sqltools-driver-pg"
-      ]
+      ],
+      "settings": {
+        "sqltools.connections": [
+          {
+            "name": "workshop_graphql",
+            "driver": "PostgreSQL",
+            "server": "localhost",
+            "port": 5432,
+            "database": "workshop_graphql",
+            "username": "postgres",
+            "password": "postgis"
+          }
+        ]
+      }
     }
   }
 }
