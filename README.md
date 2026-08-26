@@ -1,6 +1,17 @@
 # **Workshop: Creating a Spatial GraphQL API with PostGIS and PostGraphile**
 
-### This workshop aims to explain and exemplify the use of Postgraphile and PostgreSQL to generate a spatial GraphQL API.
+### This workshop aims to explain and exemplify the use of PostGraphile and PostgreSQL to generate a spatial GraphQL API.
+
+----------
+## What you will learn
+
+By the end of this workshop you will know how to:
+
+- generate a complete GraphQL API from an existing PostgreSQL/PostGIS database, without writing any application code;
+- query spatial data through GraphQL, getting geometries as GeoJSON and using spatial filters;
+- shape the API (rename, hide and document things) with smart tags, without changing the data model;
+- extend the API with PostgreSQL functions, from computed columns to raster statistics and custom spatial queries;
+- secure the API with JWT authentication, role based access control and row level security, all enforced by PostgreSQL itself.
 
 ----------
 ## Table of contents
@@ -18,11 +29,48 @@
 
 
 ----------
+## Before the workshop (try to do this at home)
+
+Event wifi is usually slow and shared, so please prepare your machine in advance. It should take around 15 minutes:
+
+1. Install the [requirements](Requirements.md): Docker plus NodeJS. The requirements page runs pgAdmin4 in Docker; if you prefer it native, install it from [pgadmin.org](https://www.pgadmin.org/download/).
+2. Clone this repository:
+
+   ```shell
+   git clone https://github.com/lcalisto/workshop-spatial-graphql.git
+   ```
+
+3. Pull the Docker images while you have good internet:
+
+   ```shell
+   docker pull kartoza/postgis:17-3.5
+   docker pull dpage/pgadmin4:9
+   ```
+
+4. Install PostGraphile and its plugins by running the two `npm install -g` commands from [section 2](#2---using-postgraphile).
+5. Confirm it runs:
+
+   ```shell
+   postgraphile --version
+   ```
+
+If all of the above works you are ready. If something fails, no stress, we will sort it out together at the start of the session.
+
+----------
 ## What is GraphQL?
 
 *GraphQL is a query language for your API. GraphQL isn't tied to any specific database or storage engine and is instead backed by your existing code and data.*
 
 *A GraphQL service is created by defining types and fields on those types, then providing functions for each field on each type.*
+
+### Coming from REST?
+
+If you have used REST APIs before, this mapping may help:
+
+- A REST API exposes many endpoints (`/municipalities`, `/municipalities/153`, ...), each returning a fixed structure. A GraphQL API exposes a **single endpoint** that accepts queries.
+- In REST the **server** decides what each response contains. In GraphQL the **client** asks for exactly the fields it needs and the response mirrors the query, so related data (a municipality and its population) comes in one request instead of several.
+- Instead of HTTP verbs, GraphQL uses **queries** to read and **mutations** to write.
+- The schema is **typed and self-documenting**; tools like GraphiQL use it to offer autocomplete and browsable documentation, as we will see during the workshop.
 
 If you are new to GraphQL it might be good to check the official documentation: https://graphql.org/learn/
 
@@ -32,13 +80,14 @@ If you are new to GraphQL it might be good to check the official documentation: 
 
 In order to move forward make sure you have installed:
 
-- **PostgreSQL** with **PostGIS** (you can use docker)
-- **NodeJS**
-- **npm**
+- **PostgreSQL** (12 or newer) with **PostGIS** 3, including the **postgis_raster** extension (you can use Docker)
+- **NodeJS** LTS (18 or newer; the workshop was tested with Node 22), which includes **npm**
 - **pgAdmin4** (recommended)
 - **QGIS** (optional, for exploring spatial features)
 
-For install procedures for local postgreSQL and pgadmin: [here](Requirements.md)
+For Docker based install procedures for PostgreSQL and pgAdmin: [here](Requirements.md)
+
+The [compose](compose/) folder of this repository runs the finished workshop stack (the section 8 end state) with Docker Compose; treat it as a reference or a preview of the end result, not as a way to follow along.
 
 ----------
 
@@ -46,7 +95,26 @@ For install procedures for local postgreSQL and pgadmin: [here](Requirements.md)
 
 In order to start the workshop we will use an existing database. The idea is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
 
-Using **pgAdmin** please create a new, empty database and then restore it using the following file [initial_db.backup](./raw_data/initial_db.backup) into the new recently created database.
+Using **pgAdmin**:
+
+1. Connect to your PostgreSQL server (the [requirements](Requirements.md) page has the connection settings used in this workshop).
+2. Make sure you have an empty database named **`workshop_graphql`**; the rest of the workshop assumes this name. If you used the Docker command from [requirements](Requirements.md) it already exists, otherwise create it now (right click *Databases*, then *Create*).
+3. Right click the `workshop_graphql` database and choose **Restore...**.
+4. In *Filename* select the file [initial_db.backup](./raw_data/initial_db.backup) from your clone of this repository and press **Restore**. If pgAdmin runs in Docker it browses the container's files, not your host's; upload the backup first (the upload icon in the file dialog) or use the command line variant below.
+5. Refresh the database (right click, *Refresh*) and confirm you see the tables and schemas described below.
+
+> If pgAdmin complains about `pg_restore` (a "binary path" error), set the path under *File > Preferences > Paths > Binary paths*, matching your PostgreSQL major version. The dockerised pgAdmin from [requirements](Requirements.md) comes with these paths preconfigured.
+
+<details>
+<summary><b>Prefer the command line?</b></summary>
+
+If your database runs in the Docker container from [requirements](Requirements.md), this restores the backup in one command. Run it from the root of this repository (on Windows use Git Bash or WSL):
+
+```shell
+docker exec -i -e PGPASSWORD=postgis postgis-graphql pg_restore -h localhost -U postgres -d workshop_graphql --no-owner < raw_data/initial_db.backup
+```
+
+</details>
 
 Note: the PostgreSQL server must have the **postgis** and **postgis_raster** extensions available; both are included in the Docker images used by this repo (see [requirements](Requirements.md)).
 
@@ -54,11 +122,11 @@ Note: the PostgreSQL server must have the **postgis** and **postgis_raster** ext
 
 
 After restoring the DB you will see 5 tables (in the app_public schema) and 4 schemas:
-- **municipality**, Spatial table with portuguese municipalities.
-- **population**, Non-spatial table with portuguese population per municipality;
-- **parcels**, Spatial table used to collect polygons during field campaign;
-- **landcover**, Spatial (vector) table with landcover for Lisbon region from [Corine 2018](https://land.copernicus.eu/en/products/corine-land-cover/clc2018)
-- **srtm**, Spatial (raster) table with SRTM for Lisbon region. 
+- **municipality**, Spatial table with the municipalities of mainland Portugal, from the official administrative map [CAOP](https://www.dgterritorio.gov.pt/atividades/cartografia/cartografia-tematica/caop) (Direção-Geral do Território);
+- **population**, Non-spatial table with population per municipality, from the [INE 2021 Census](https://censos.ine.pt/) preliminary results;
+- **parcels**, Spatial table used to collect polygons during a field campaign;
+- **landcover**, Spatial (vector) table with landcover for the Lisbon region from [Corine 2018](https://land.copernicus.eu/en/products/corine-land-cover/clc2018);
+- **srtm**, Spatial (raster) table with [NASA SRTM](https://en.wikipedia.org/wiki/Shuttle_Radar_Topography_Mission) elevation for the Lisbon region.
 
 
 ![ERD](raw_data/db_erd.png)
@@ -91,7 +159,7 @@ According to the documentation PostGraphile is formed of three forms of usage:
   
 - **Schema-only**, deepest layer which contains all the types, fields and resolvers.
 
-**At this workshop we will use mainly the CLI**. Eventually, if we have time, we'll show a very basic library usage with NodeJS and Express.
+**At this workshop we will use the CLI.** The [compose](compose/) folder of this repository shows the same CLI server running inside Docker, and section 3 has a short note on library usage.
 
 You can check the official docs for more information on how to use the CLI, https://postgraphile.org/postgraphile/4/usage-cli/
 
@@ -128,7 +196,7 @@ More info about plugins can be found on [PostGraphile community plugins](https:/
 
 ### Running the server as CLI
 
-Now that we have installed the CLI we will run it as following. Don't forget to replace the username, password and database_name.
+Now that we have installed the CLI we will run it as following. The connection string below matches the database created in [requirements](Requirements.md); if your PostgreSQL uses different credentials, adjust it.
 
 ```shell
 postgraphile \
@@ -148,21 +216,49 @@ postgraphile \
   --allow-explain \
   --enable-query-batching \
   --legacy-relations omit \
-  --connection "postgres://username:password@localhost/database_name" \
+  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
   --schema app_public
 ```
 
 For Windows users, run the following command instead:
 
 ```shell
-postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain-nulls --no-ignore-rbac --port 5000 --show-error-stack=json --extended-errors hint,detail,errcode --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis --skip-plugins graphile-build:NodePlugin --simple-collections only --graphiql "/" --enhance-graphiql --allow-explain --enable-query-batching --legacy-relations omit --connection "postgres://username:password@localhost/database_name" --schema app_public
+postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain-nulls --no-ignore-rbac --port 5000 --show-error-stack=json --extended-errors hint,detail,errcode --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis --skip-plugins graphile-build:NodePlugin --simple-collections only --graphiql "/" --enhance-graphiql --allow-explain --enable-query-batching --legacy-relations omit --connection "postgres://postgres:postgis@localhost/workshop_graphql" --schema app_public
 ```
+
+<details>
+<summary><b>What do all these options do?</b></summary>
+
+- `--subscriptions`, enables the GraphQL subscriptions infrastructure (websockets); not used in this workshop but harmless to keep on.
+- `--watch`, watches the database and updates the GraphQL schema automatically, so our SQL changes appear without restarting the server.
+- `--dynamic-json`, exposes JSON values as raw JSON instead of strings.
+- `--no-setof-functions-contain-nulls`, declares that our set-returning functions never return null rows, which gives cleaner (non-nullable) types.
+- `--no-ignore-rbac`, only exposes what the connecting role is actually allowed to access; we rely on this in section 8.
+- `--port 5000`, the HTTP port of the server.
+- `--show-error-stack=json` and `--extended-errors hint,detail,errcode`, verbose PostgreSQL errors in the responses; great while learning, avoid in production.
+- `--append-plugins ...`, loads the four plugins we installed above.
+- `--skip-plugins graphile-build:NodePlugin`, removes the Relay global `Node` interface, giving a smaller and simpler schema.
+- `--simple-collections only`, generates simple list fields (like `municipalitiesList`) instead of cursor connections; see section 3.
+- `--graphiql "/"`, serves the GraphiQL IDE at the root URL.
+- `--enhance-graphiql`, enables the full-featured GraphiQL (explorer sidebar, history and more).
+- `--allow-explain`, lets GraphiQL show the PostgreSQL execution plan of each query.
+- `--enable-query-batching`, allows clients to send several operations in one HTTP request.
+- `--legacy-relations omit`, skips deprecated duplicate relation fields.
+- `--connection`, the PostgreSQL connection string (who connects, and to which database).
+- `--schema app_public`, only this schema is exposed to GraphQL.
+
+</details>
 
 This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above. 
 
 ### Explore the interface and current schema
 
-Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE.
+Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE. Take a minute to find your way around it:
+
+- The central panel is the **query editor**; the **play button** (or Ctrl+Enter) runs the current operation.
+- The **Explorer** panel on the left builds queries for you as you tick fields, a great way to discover the schema.
+- The **Docs** button opens the schema documentation, generated automatically from the database (including our SQL comments, as we will see later).
+- At the bottom of the editor you will find the **QUERY VARIABLES** and **REQUEST HEADERS** tabs; we will need variables in section 4 and headers in section 8.
 
 PostGraphile automatically adds a number of elements to the generated GraphQL schema based on the tables and columns found in the inspected schema. For the tables from the app-public schema, it creates:
 
@@ -177,7 +273,7 @@ PostGraphile automatically adds a number of elements to the generated GraphQL sc
 
 ### First queries
 
-Now that we setup our inital API let's query it:
+Now that we setup our initial API let's query it:
 
 
 - Query municipality with `ID 153`
@@ -322,6 +418,25 @@ PostGraphile automatically generates sub geometries, the next query shows how th
 }
 
 ```
+
+### If something goes wrong
+
+- **Port 5000 already in use.** On recent macOS the AirPlay Receiver listens on port 5000; turn it off in *System Settings > General > AirDrop & Handoff*, or start PostGraphile with a different `--port`.
+- **Port 5432 already in use.** Another PostgreSQL is running on your machine. Stop it, or publish the Docker container on a different port and adjust the connection string accordingly.
+- **`postgraphile: command not found`.** Your npm global folder is not on the PATH. This is common with nvm; run `nvm use --lts` and reinstall, or add the output of `npm config get prefix`, plus `/bin`, to your PATH (on Windows, add the prefix folder itself).
+- **pgAdmin cannot restore the backup.** See the binary path note in [section 1](#1---create-and-restore-a-postgresql-database).
+- **pgAdmin runs in Docker and cannot reach the database.** Use `host.docker.internal` instead of `localhost` as the host name, as explained in [requirements](Requirements.md).
+- **"Failed to setup watch fixtures" warning.** Expected when the server connects with a non-superuser role (section 8) and safe to ignore.
+
+### Lost? Reset in three steps
+
+If at any point your database no longer matches the workshop, you can rebuild it to the exact point you need:
+
+1. Stop the PostGraphile server (Ctrl+C), then drop and recreate the `workshop_graphql` database and restore `initial_db.backup` again ([section 1](#1---create-and-restore-a-postgresql-database)).
+2. Open [compose/db/init/01-after-workshop.sql](compose/db/init/01-after-workshop.sql), which replays all the SQL of this README in order, and run it from the top down to the "end of section N" marker where you want to resume.
+3. Start the PostGraphile server again.
+
+**Note:** the SQL file does not recreate the section 8 users, since they are created through GraphQL mutations. If you reset during section 8, run the `m1`, `m2` and `m3` mutations again; on a fresh database they get ids 1, 2 and 3.
 
  ----------
 ## 3 - Pagination
@@ -605,8 +720,10 @@ It's possible to customise PostGraphile GraphQL schema by using tags on our data
 
 More information on Smart tags and how to use them can be found here: https://postgraphile.org/postgraphile/4/smart-tags/
 
+> **Heads up:** from here on we rename and hide things in the schema. Any queries you wrote against the old names (for example `landcoversList`) will stop working as written; that is the whole point of this section. The [reset box](#lost-reset-in-three-steps) is there if you need it.
+
 #### Omit
-Using PgAdmin lets run the following SQL code using PgAdmin. Check what happens on the GraphQL schema.
+Lets run the following SQL code using pgAdmin (the Query Tool). Check what happens on the GraphQL schema.
 
 ```sql 
 comment on table app_public.municipality is E'@omit';
@@ -629,7 +746,7 @@ comment on table app_public.srtm is E'@omit';
 
 #### Rename
 
-In order to rename an object we can use **@name**. Please run the following to rename out table `landcover`.
+In order to rename an object we can use **@name**. Please run the following to rename our table `landcover`.
 
 ```sql
 comment on table app_public.landcover is E'@name clc_landcover';
@@ -729,7 +846,7 @@ GraphQL query:
 
 #### SRTM
 
-On the next example we will generate an extra fields on the parcels connection which gives **STRM raster statistics**.
+On the next example we will generate extra fields on the parcels connection which give **SRTM raster statistics**.
 
 
 ```sql
@@ -993,7 +1110,7 @@ query {
 Authentication and authorization is incredibly important whenever you build an application. You want your users to be able to login and out of your service, and only edit the content your platform has given them permission to edit. Postgres already has great support for authentication and authorization using a secure role based system, so PostGraphile just bridges the gap between the Postgres role mechanisms and HTTP based authorization.
 
 
-For more detailed info on Postgraphile authentication please check the [docs](https://postgraphile.org/postgraphile/4/postgresql-schema-design/#authentication-and-authorization).
+For more detailed info on PostGraphile authentication please check the [docs](https://postgraphile.org/postgraphile/4/postgresql-schema-design/#authentication-and-authorization).
 
 We will implement a very basic Auth, later you can use this technique and functions to add more complex rules.
 
@@ -1063,7 +1180,7 @@ $$ language plpgsql strict security definer;
 comment on function app_public.register_person(text, text, text) is 'Registers a single user and creates an account into the app.';
 ```
 
-Now we have a mutation that allows us to register users but we are using a superuser in Postgraphile CLI. Lets **not register any user for a moment** and check the Roles first. 
+Now we have a mutation that allows us to register users but we are using a superuser in the PostGraphile CLI. Lets **not register any user for a moment** and check the Roles first. 
 
 ### Roles
 When a user logs in, we want them to make their queries using a specific PostGraphile role. Using that role we can define rules that restrict what data the user may access.
@@ -1092,7 +1209,7 @@ create type app_public.jwt_token as (
   exp bigint
 );
 ```
-Next can create a **Custom mutation** which will actually return the token JWT as follows. This function will return null if the user failed to authenticate, and a JWT token if the user succeeds. Returning null could mean that the password was incorrect, a user with their email doesn’t exist, or the client forgot to pass email and/or password arguments. If a user with the provided email does exist, and the provided password checks out with `password_hash` in `app_private.person`, then we return an instance of `app_public.jwt_token` which will then be converted into an actual JWT by PostGraphile.
+Next we can create a **Custom mutation** which will actually return the JWT token as follows. This function will return null if the user failed to authenticate, and a JWT token if the user succeeds. Returning null could mean that the password was incorrect, a user with their email doesn’t exist, or the client forgot to pass email and/or password arguments. If a user with the provided email does exist, and the provided password checks out with `password_hash` in `app_private.person`, then we return an instance of `app_public.jwt_token` which will then be converted into an actual JWT by PostGraphile.
 
 ```sql
 create function app_public.authenticate(
@@ -1204,7 +1321,7 @@ postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain
 ```
 
 
-Lets now register some users using our previous custom mutation:
+Lets now register some users using our previous custom mutation. The block below contains three named operations; when you press play, GraphiQL asks which one to run. Run m1, m2 and m3 one at a time:
 
 ```graphql
 mutation m1 {
@@ -1260,11 +1377,11 @@ mutation {
   }
 }
 ```
-When PostGraphile gets a JWT from an HTTP request’s Authorization header should be:
+To send the token back to the server, open the **REQUEST HEADERS** tab at the bottom of GraphiQL (next to QUERY VARIABLES) and add the following header, replacing `<jwtToken>` with the value returned by the `authenticate` mutation:
 
-```graphql
+```json
 {
-"Authorization": "Bearer <jwtToken>"
+  "Authorization": "Bearer <jwtToken>"
 }
 ```
 
@@ -1278,7 +1395,7 @@ query {
 }
 ```
 
-### RLS
+### Row Level Security (RLS)
 RLS allows us to specify access to the data in our Postgres databases on a row level instead of a table level. For more info on RLS please check the official [docs](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 
 ```sql
@@ -1366,6 +1483,38 @@ mutation updateParcel {
 
 ----------
 
+## Wrap-up
+
+In this workshop we went from a plain PostGIS database to a working spatial GraphQL API:
+
+- restored an existing spatial database and explored it (section 1);
+- generated a GraphQL API on top of it and queried spatial data as GeoJSON, with pagination and spatial filters (sections 2 to 4);
+- shaped the schema with smart tags and extended it with computed columns, raster statistics and custom queries, all in SQL (sections 5 and 6);
+- added CRUD mutations, JWT authentication and row level security, enforced by PostgreSQL itself (sections 7 and 8).
+
+### Your API is just HTTP
+
+Everything we did through GraphiQL is a plain HTTP POST to the same endpoint. Any client (curl, Python, JavaScript, a mobile app) can consume the API. For example, on macOS/Linux or Git Bash:
+
+```shell
+curl -X POST http://localhost:5000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ municipalitiesList(first: 2) { name district } }"}'
+```
+
+### A note on security
+
+The credentials in this workshop (the `postgis` password, the `keyboard_kitten` JWT secret) are deliberately public teaching values. In a real deployment use strong unique secrets, serve the API over HTTPS and read the [production considerations](https://postgraphile.org/postgraphile/4/production/).
+
+### Where to go next
+
+- The [compose](compose/) folder runs the finished workshop stack (database and API) in containers.
+- [PostgreSQL schema design](https://postgraphile.org/postgraphile/4/postgresql-schema-design/), the long-form guide behind sections 7 and 8.
+- [Connection filter operators](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/main/docs/operators.md) and the [PostGIS documentation](https://postgis.net/documentation/).
+- My [workshop-postgis-raster](https://github.com/lcalisto/workshop-postgis-raster), for the raster side of PostGIS.
+
+----------
+
 ## What about PostGraphile v5?
 
 PostGraphile v5 is the current major version (stable since March 2026), built around the [Grafast](https://grafast.org/) plan-based execution engine, a unified preset/plugin configuration system (`graphile.config.mjs`) and a new GraphiQL IDE (Ruru). This workshop deliberately stays on the battle-tested v4 line because the spatial plugin ecosystem has not fully caught up yet:
@@ -1374,3 +1523,7 @@ PostGraphile v5 is the current major version (stable since March 2026), built ar
 - There is no v5 equivalent of `postgraphile-plugin-connection-filter-postgis` yet, so the spatial filtering shown in section 4 has no official v5 home for now.
 
 The [experiments/postgraphile-v5](experiments/postgraphile-v5/) folder in this repository contains reproducible Docker test kits that run this workshop's database on PostGraphile v5 with two different PostGIS plugin options, if you want a taste of what is coming. Once the ecosystem stabilises, this workshop will be migrated to v5.
+
+----------
+
+*Running this workshop with a group? See [INSTRUCTORS.md](INSTRUCTORS.md) for a suggested 3-hour delivery plan.*
