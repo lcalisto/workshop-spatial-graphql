@@ -1,4 +1,4 @@
-# **Workshop: Creating a Spatial GraphQL API with PostGIS and PostGraphile**
+# **GraphQL meets PostGIS: a spatial API workshop**
 
 ### This workshop aims to explain and exemplify the use of PostGraphile and PostgreSQL to generate a spatial GraphQL API.
 
