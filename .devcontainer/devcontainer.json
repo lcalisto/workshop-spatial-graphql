@@ -1,0 +1,27 @@
+{
+  "name": "Spatial GraphQL Workshop",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspaces/workshop-spatial-graphql",
+  "remoteUser": "node",
+  "forwardPorts": [5000, 5432],
+  "portsAttributes": {
+    "5000": {
+      "label": "PostGraphile",
+      "onAutoForward": "silent"
+    },
+    "5432": {
+      "label": "PostgreSQL/PostGIS",
+      "requireLocalPort": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg"
+      ]
+    }
+  }
+}

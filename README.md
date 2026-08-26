@@ -89,6 +89,40 @@ For Docker based install procedures for PostgreSQL and pgAdmin: [here](Requireme
 
 The [compose](compose/) folder of this repository runs the finished workshop stack (the section 8 end state) with Docker Compose; treat it as a reference or a preview of the end result, not as a way to follow along.
 
+### Running in GitHub Codespaces
+
+If you're using GitHub Codespaces, the database from step 1 is already created and restored automatically on first start — you can skip this step. The container uses **SQLTools** VS Code extension (with the PostgreSQL driver) preconfigured to reach it, so you can run every SQL snippet in this workshop straight from the editor, or via `psql` in the integrated terminal. Connection details:
+
+```
+Host: localhost
+Port: 5432
+User: postgres
+Password: postgis
+Database: workshop_graphql
+```
+
+To use a desktop GUI like pgAdmin or QGIS against the Codespace's database, use the [GitHub CLI](https://cli.github.com/) to open a real local TCP tunnel (browser's "Ports" panel only proxies HTTP(S) — it can't carry the raw Postgres wire protocol).
+
+If you don't already have the GitHub CLI installed:
+
+```shell
+# Windows (winget)
+winget install --id GitHub.cli
+
+# macOS (Homebrew)
+brew install gh
+
+# Linux (Ubuntu — see https://github.com/cli/cli/blob/trunk/docs/install_linux.md for other distros)
+sudo apt install gh
+```
+
+Then authenticate once with `gh auth login` (if you authenticate via token, make sure you add scope 'codespaces'). Leave the following command running, then point your desktop tool at `localhost:5432` using the credentials above:
+
+```shell
+gh codespace list  # find your codespace's name
+gh codespace ports forward 5432:5432 -c <codespace-name>
+```
+
 ----------
 
 ## 1 - Create and restore a PostgreSQL database
