@@ -1,0 +1,35 @@
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspaces/workshop-spatial-graphql:cached
+    environment:
+      DATABASE_URL: postgres://postgres:postgis@localhost:5432/workshop_graphql
+    network_mode: service:db
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sleep infinity
+
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      POSTGRES_DB: workshop_graphql
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgis
+    volumes:
+      - workshop-db:/var/lib/postgresql/data
+      - ../compose/db/init/00-initial-db.sql.gz:/docker-entrypoint-initdb.d/00-initial-db.sql.gz:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U postgres -d workshop_graphql -tAc 'SELECT 1 FROM app_public.municipality LIMIT 1' | grep -q 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+volumes:
+  workshop-db:
