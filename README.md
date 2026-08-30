@@ -120,7 +120,13 @@ brew install gh
 sudo apt install gh
 ```
 
-Then authenticate once with `gh auth login` (if you authenticate via token, make sure you add scope 'codespaces'). Leave the following command running, then point your desktop tool at `localhost:5432` using the credentials above:
+Then authenticate once with `gh auth login`, and add the Codespaces permission to your token (the default login does not include it):
+
+```shell
+gh auth refresh -h github.com -s codespace
+```
+
+Leave the following command running, then point your desktop tool at `localhost:5432` using the credentials above:
 
 ```shell
 gh codespace list  # find your codespace's name
