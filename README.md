@@ -49,7 +49,7 @@ Event wifi is usually slow and shared, so please prepare your machine in advance
    docker pull dpage/pgadmin4:9
    ```
 
-4. Install PostGraphile and its plugins by running the two `npm install -g` commands from [section 2](#2---using-postgraphile).
+4. Install PostGraphile and its plugins by running **both** `npm install -g` commands from [section 2](#2---using-postgraphile): first PostGraphile itself, then the plugins.
 5. Confirm it runs:
 
    ```shell
