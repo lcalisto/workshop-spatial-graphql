@@ -948,7 +948,7 @@ With filters:
 
 
 
-**To discuss:** What is the difference between a **computed column** and a PostgreSQL **generated column**?
+**To discuss:** What is the difference between a **computed column** and a PostgreSQL [**generated column**](https://www.postgresql.org/docs/current/ddl-generated-columns.html)?
 ### 6.2 - Custom queries
 
 While Computed columns generate one extra field on a specific connection, custom queries can add root-level Query fields to our GraphQL schema. This can be quite important while generating our API specially for processing algorithms.
