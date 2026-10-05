@@ -1,1 +1,4 @@
+# pgAdmin uses this file to open the workshop database without asking for a password.
+# It holds the workshop's public teaching password, not a secret.
+# Format: hostname:port:database:username:password
 db:5432:*:postgres:postgis

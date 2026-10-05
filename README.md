@@ -16,7 +16,7 @@ By the end of this workshop you will know how to:
 ----------
 ## Table of contents
 
-1) [Create and restore a PostgreSQL database](#1---create-and-restore-a-postgresql-database)
+1) [Start the environment and meet the database](#1---start-the-environment-and-meet-the-database)
 2) [Using PostGraphile](#2---using-postgraphile)
 3) [Pagination](#3---pagination)
 4) [Filters](#4---filters)
@@ -31,32 +31,44 @@ By the end of this workshop you will know how to:
 ----------
 ## Before the workshop (try to do this at home)
 
-Event wifi is usually slow and shared, so please prepare your machine in advance. It should take around 15 minutes.
+Event wifi is usually slow and shared, so please prepare your machine in advance. It should take around 15 minutes, most of it waiting for downloads.
 
-**Zero-install alternative:** you can run everything in the browser with [GitHub Codespaces](#running-in-github-codespaces); no local installs, just a GitHub account and a steady internet connection. If you go that route, this checklist does not apply.
+**Zero-install alternative:** you can run everything in the browser with [GitHub Codespaces](#running-in-github-codespaces); no local installs, just a GitHub account and a steady internet connection. If you go that route, this checklist does not apply: create your codespace once before the workshop instead, because its first start takes a few minutes.
 
-1. Install the [requirements](Requirements.md): Docker plus NodeJS. The requirements page runs pgAdmin4 in Docker; if you prefer it native, install it from [pgadmin.org](https://www.pgadmin.org/download/).
-2. Clone this repository:
-
-   ```shell
-   git clone https://github.com/lcalisto/workshop-spatial-graphql.git
-   ```
-
-3. Pull the Docker images while you have good internet:
+1. Install Docker: [Docker Desktop](https://docs.docker.com/desktop/) on Windows and macOS, [Docker Engine](https://docs.docker.com/engine/install/) or Docker Desktop on Linux. On Windows you need administrator rights for the installation, and Docker Desktop runs on WSL 2, which its installer can set up for you. On Linux with Docker Engine, also install the Compose and Buildx plugins (the packages `docker-compose-plugin` and `docker-buildx-plugin` in Docker's own repositories) and add your user to the `docker` group.
+2. Start Docker and check that Docker Compose is version 2 or newer:
 
    ```shell
-   docker pull kartoza/postgis:17-3.5
-   docker pull dpage/pgadmin4:9
+   docker compose version
    ```
 
-4. Install PostGraphile and its plugins by running **both** `npm install -g` commands from [section 2](#2---using-postgraphile): first PostGraphile itself, then the plugins.
-5. Confirm it runs:
+3. Get a copy of this repository into a normal local folder (not a network drive, and not a folder that a cloud service keeps synchronised):
 
    ```shell
-   postgraphile --version
+   git clone --depth 1 https://github.com/lcalisto/workshop-spatial-graphql.git
+   cd workshop-spatial-graphql
    ```
 
-If all of the above works you are ready. If something fails, no stress, we will sort it out together at the start of the session.
+   No git? Use **Code > Download ZIP** on the GitHub page of the repository, unpack the file and open a terminal in the unpacked folder, the one that holds `docker-compose.yml`.
+4. Start the workshop environment once, while you have good internet:
+
+   ```shell
+   docker compose up -d
+   ```
+
+   This first start downloads about 0.5 GB and builds the workshop images, so it takes a few minutes and needs about 3 GB of free disk space. Later starts take seconds.
+5. Open [http://localhost:5001](http://localhost:5001) (GraphiQL) and [http://localhost:5050](http://localhost:5050) (pgAdmin) in your browser. pgAdmin takes the longest to start: if its page does not load yet, wait about ten seconds and reload. If both pages load, you are ready.
+6. Stop the environment until the workshop. Nothing is lost:
+
+   ```shell
+   docker compose stop
+   ```
+
+On the day, start Docker and run `docker compose up -d` again in the same folder.
+
+If you update your copy of the repository later (`git pull` or a new ZIP), rebuild the environment with `docker compose down -v` followed by `docker compose up -d --build`. This also resets the database to its initial state.
+
+If something fails, no stress, we will sort it out together at the start of the session. The list under [If something goes wrong](#if-something-goes-wrong) covers the usual problems.
 
 ----------
 ## What is GraphQL?
@@ -80,30 +92,23 @@ If you are new to GraphQL it might be good to check the official documentation: 
 
 ## Requirements
 
-In order to move forward make sure you have installed:
+Docker runs everything in this workshop, so the list is short:
 
-- **PostgreSQL** (12 or newer) with **PostGIS** 3, including the **postgis_raster** extension (you can use Docker)
-- **NodeJS** LTS (18 or newer; the workshop was tested with Node 22), which includes **npm**
-- **pgAdmin4** (recommended)
-- **QGIS** (optional, for exploring spatial features)
+- **Docker**, with Docker Compose version 2 or newer. It runs PostgreSQL with PostGIS, PostGraphile and pgAdmin for you; you do not install any of them.
+- **A text editor**, for the one small file we edit during the workshop. Any editor works. One that comments and uncomments a line with Ctrl+/ (Cmd+/ on macOS), such as VS Code, is handy.
+- **A web browser**, for GraphiQL and pgAdmin.
+- **QGIS** (optional), for exploring spatial features.
 
-For Docker based install procedures for PostgreSQL and pgAdmin: [here](Requirements.md)
-
-The [compose](compose/) folder of this repository runs the finished workshop stack (the section 8 end state) with Docker Compose; treat it as a reference or a preview of the end result, not as a way to follow along.
-
-In short, there are three container setups in this repository: [Requirements.md](Requirements.md) creates local containers to follow the workshop, GitHub Codespaces (below) does the same in the cloud with zero local installs, and [compose](compose/) holds the finished end state.
+The [Before the workshop](#before-the-workshop-try-to-do-this-at-home) checklist above installs Docker and starts the environment. There are three ways to follow the workshop: Docker Compose on your own machine, which is the default and what this README describes; GitHub Codespaces (below), which runs the same environment in the cloud with zero local installs; and your own PostgreSQL and NodeJS without Docker, explained in [Requirements.md](Requirements.md).
 
 ### Running in GitHub Codespaces
 
-If you're using GitHub Codespaces, the database from section 1 is already created and restored automatically on first start, so you can skip that section. The container uses **SQLTools** VS Code extension (with the PostgreSQL driver) preconfigured to reach it, so you can run every SQL snippet in this workshop straight from the editor, or via `psql` in the integrated terminal. Connection details:
+A codespace runs the same Docker Compose environment as your own machine, in the cloud. It starts the environment for you, so skip the `docker compose up -d` step of section 1. The steps below list what else is different; the rest of this README applies as written.
 
-```
-Host: localhost
-Port: 5432
-User: postgres
-Password: postgis
-Database: workshop_graphql
-```
+1. On the GitHub page of this repository choose **Code > Codespaces > Create codespace on main**.
+2. The first start builds the environment, which takes a few minutes. In the terminal of the codespace, run `docker compose ps` until it lists three services, with `(healthy)` next to `db`.
+3. Open the **Ports** tab and open ports 5001 (GraphiQL) and 5050 (pgAdmin) in the browser. Use those two addresses in your browser wherever this README says `http://localhost:5001` or `http://localhost:5050`. Commands that you run in the terminal of the codespace, such as the `curl` example of the wrap-up, keep `localhost`. The finished workshop of the wrap-up is port 5002 in the same tab.
+4. From here on, whenever this README asks you to edit `postgraphile/config.js`, do it in the editor of the codespace, and run the `docker compose` commands in its terminal.
 
 To use a desktop GUI like pgAdmin or QGIS against the Codespace's database, use the [GitHub CLI](https://cli.github.com/) to open a real local TCP tunnel (the browser's "Ports" panel only proxies HTTP(S); it cannot carry the raw Postgres wire protocol).
 
@@ -126,46 +131,58 @@ Then authenticate once with `gh auth login`, and add the Codespaces permission t
 gh auth refresh -h github.com -s codespace
 ```
 
-Leave the following command running, then point your desktop tool at `localhost:5432` using the credentials above:
+Run the first command to find the name of your codespace. Then leave the second one running, with that name in place of `<codespace-name>`, and point your desktop tool at `localhost:15432`, with user `postgres`, password `postgis` and database `workshop_graphql`:
 
 ```shell
-gh codespace list  # find your codespace's name
-gh codespace ports forward 5432:5432 -c <codespace-name>
+gh codespace list
+gh codespace ports forward 15432:15432 -c <codespace-name>
 ```
 
 ----------
 
-## 1 - Create and restore a PostgreSQL database
+## 1 - Start the environment and meet the database
 
 In order to start the workshop we will use an existing database. The idea is to show how you can use one existing spatial database and generate a GraphQL API on top of it.
 
-Using **pgAdmin**:
-
-1. Connect to your PostgreSQL server (the [requirements](Requirements.md) page has the connection settings used in this workshop).
-2. Make sure you have an empty database named **`workshop_graphql`**; the rest of the workshop assumes this name. If you used the Docker command from [requirements](Requirements.md) it already exists, otherwise create it now (right click *Databases*, then *Create*).
-3. Right click the `workshop_graphql` database and choose **Restore...**.
-4. In *Filename* select the file [initial_db.backup](./raw_data/initial_db.backup) from your clone of this repository and press **Restore**. If pgAdmin runs in Docker it browses the container's files, not your host's; upload the backup first (the upload icon in the file dialog) or use the command line variant below.
-5. Refresh the database (right click, *Refresh*) and confirm you see the tables and schemas described below.
-
-> If pgAdmin complains about `pg_restore` (a "binary path" error), set the path under *File > Preferences > Paths > Binary paths*, matching your PostgreSQL major version. The dockerised pgAdmin from [requirements](Requirements.md) comes with these paths preconfigured.
-
-<details>
-<summary><b>Prefer the command line?</b></summary>
-
-If your database runs in the Docker container from [requirements](Requirements.md), this restores the backup in one command. Run it from the root of this repository (on Windows use Git Bash or WSL):
+Open a terminal in the folder of this repository and start the environment (in Codespaces it is already running):
 
 ```shell
-docker exec -i -e PGPASSWORD=postgis postgis-graphql pg_restore -h localhost -U postgres -d workshop_graphql --no-owner < raw_data/initial_db.backup
+docker compose up -d
 ```
 
-</details>
+If you went through the [Before the workshop](#before-the-workshop-try-to-do-this-at-home) checklist, this takes a few seconds. Otherwise Docker first downloads about 0.5 GB and builds the workshop images, which takes a few minutes. Either way, the command starts three containers (Docker Compose calls them services):
 
-Note: the PostgreSQL server must have the **postgis** and **postgis_raster** extensions available; both are included in the Docker images used by this repo (see [requirements](Requirements.md)).
+| What | Where | Notes |
+| ---- | ----- | ----- |
+| GraphiQL and the GraphQL API (PostGraphile) | [http://localhost:5001](http://localhost:5001) | we use it from section 2 on |
+| pgAdmin | [http://localhost:5050](http://localhost:5050) | no login; the workshop database is already registered |
+| PostgreSQL with PostGIS | `localhost:15432` | for QGIS or psql: user `postgres`, password `postgis`, database `workshop_graphql` |
+
+Check that they are running:
+
+```shell
+docker compose ps
+```
+
+You should see the three services `db`, `pgadmin` and `postgraphile` with a status that starts with `Up`, and `(healthy)` next to `db`. If something looks different, see [If something goes wrong](#if-something-goes-wrong).
+
+The database is already there: it was restored while Docker built the database image, so there is nothing to create or import.
+
+### A first look with pgAdmin
+
+1. Open [http://localhost:5050](http://localhost:5050). There is no login. If the page does not load yet, pgAdmin is still starting: wait about ten seconds and reload.
+2. In the tree on the left, open **Servers > Workshop database > Databases > workshop_graphql > Schemas**. pgAdmin does not ask for a password.
+3. Open **app_public > Tables**. You should see the five tables described below.
+4. To run SQL, right click the `workshop_graphql` database and choose **Query Tool**. We will use it from section 5 on.
+
+Two commands worth knowing: `docker compose stop` stops the environment and keeps your work, and `docker compose up -d` brings it back. If you ever want to start again from the initial database, see [Lost? Reset in three steps](#lost-reset-in-three-steps).
+
+Note: the database uses the **postgis** and **postgis_raster** extensions; both are part of the database image.
 
 ### Existing database
 
 
-After restoring the DB you will see 5 tables (in the app_public schema) and 4 schemas:
+The database has 5 tables (in the app_public schema) and 4 schemas:
 - **municipality**, Spatial table with the municipalities of mainland Portugal, from the official administrative map [CAOP](https://www.dgterritorio.gov.pt/atividades/cartografia/cartografia-tematica/caop) (Direção-Geral do Território);
 - **population**, Non-spatial table with population per municipality, from the [INE 2021 Census](https://censos.ine.pt/) preliminary results;
 - **parcels**, Spatial table used to collect polygons during a field campaign;
@@ -182,7 +199,7 @@ As mentioned [here](https://postgraphile.org/postgraphile/4/namespaces/)
 - **app_public**, Tables and functions to be exposed to GraphQL (or any other system) - it's your public interface. This is the main part of your database.
 - **app_private**, No-one should be able to read this without a SECURITY DEFINER function letting them selectively do things. This is where you store passwords (bcrypted), access tokens (hopefully encrypted), etc.
 - **public**, Should be empty, used only as a default location for PostgreSQL extensions.
-- **postgraphile_watch**, PostGraphile's watch fixtures, already included in the backup so that schema watching (`--watch`) can still work in section 8, when the server connects with a non-superuser role. PostGraphile will still print a "Failed to setup watch fixtures" warning at that startup; it is expected and safe to ignore.
+- **postgraphile_watch**, PostGraphile's watch fixtures, already included in the workshop database so that schema watching (the `watch` option) can still work in section 8, when the server connects with a non-superuser role. PostGraphile will still print a "Failed to setup watch fixtures" warning at that startup; it is expected and safe to ignore.
 
 
 ----------
@@ -203,16 +220,12 @@ According to the documentation PostGraphile is formed of three forms of usage:
   
 - **Schema-only**, deepest layer which contains all the types, fields and resolvers.
 
-**At this workshop we will use the CLI.** The [compose](compose/) folder of this repository shows the same CLI server running inside Docker, and section 3 has a short note on library usage.
+**At this workshop we will use the CLI.** It runs in the `postgraphile` container that `docker compose up -d` started, so there is nothing to install. Section 3 has a short note on library usage.
 
 You can check the official docs for more information on how to use the CLI, https://postgraphile.org/postgraphile/4/usage-cli/
 
 
-Install PostGraphile globally via npm. **Note:** PostGraphile v5 is now the latest major version, with a different CLI and plugin system; this workshop targets the v4 line, so all installs below are pinned to v4-compatible versions.
-
-```shell
-npm install -g postgraphile@^4
-```
+**Note:** PostGraphile v5 is now the latest major version, with a different CLI and plugin system. This workshop targets the v4 line: the container runs PostGraphile 4.14.1, and the documentation links in this README point to the v4 pages.
 
 ### Plugins
 PostGraphile can be customized using plugins. You can find more info about this on [GraphQL Schema Plugins](https://postgraphile.org/postgraphile/4/extending/).
@@ -224,80 +237,66 @@ We will make use of the following plugins:
 - **postgraphile-plugin-connection-filter** - Adds a powerful filtering to PostGraphile, more info [here](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter)
 - **postgraphile-plugin-connection-filter-postgis** - Adds spatial filtering mechanisms into PostGraphile and the above plugin, more info [here](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis).
 
-In order to install them we need to run: 
-
-```shell
-npm install -g \
-@graphile-contrib/pg-simplify-inflector@^6 \
-@graphile/postgis@^0.2.0 \
-postgraphile-plugin-connection-filter@^2 \
-postgraphile-plugin-connection-filter-postgis@1.0.0-alpha.6
-```
+They are already installed in the `postgraphile` container, at the exact versions listed in [compose/postgraphile/package.json](compose/postgraphile/package.json).
 
 More info about plugins can be found on [PostGraphile community plugins](https://postgraphile.org/postgraphile/4/community-plugins/)
 
 ----------
 
-### Running the server as CLI
+### The configuration file
 
-Now that we have installed the CLI we will run it as following. The connection string below matches the database created in [requirements](Requirements.md); if your PostgreSQL uses different credentials, adjust it.
+PostGraphile is already running: `docker compose up -d` started it. Its options could be given as flags on a long command line; here they are in a configuration file instead, [postgraphile/config.js](postgraphile/config.js). It is the only file you edit in this workshop. Open it in your text editor and read it once: every option has a comment above it.
 
-```shell
-postgraphile \
-  --subscriptions \
-  --watch \
-  --dynamic-json \
-  --no-setof-functions-contain-nulls \
-  --no-ignore-rbac \
-  --port 5000 \
-  --show-error-stack=json \
-  --extended-errors hint,detail,errcode \
-  --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
-  --skip-plugins graphile-build:NodePlugin \
-  --simple-collections only \
-  --graphiql "/" \
-  --enhance-graphiql \
-  --allow-explain \
-  --enable-query-batching \
-  --legacy-relations omit \
-  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
-  --schema app_public
-```
-
-For Windows users, run the following command instead:
+PostGraphile reads this file only when it starts. So after every change to the file, save it and restart PostGraphile:
 
 ```shell
-postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain-nulls --no-ignore-rbac --port 5000 --show-error-stack=json --extended-errors hint,detail,errcode --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis --skip-plugins graphile-build:NodePlugin --simple-collections only --graphiql "/" --enhance-graphiql --allow-explain --enable-query-batching --legacy-relations omit --connection "postgres://postgres:postgis@localhost/workshop_graphql" --schema app_public
+docker compose restart postgraphile
 ```
+
+The restart takes about a second. Changes made in the database are different: thanks to the `watch` option they appear in the API without a restart.
+
+Two lines near the end of the file are prepared for later, one for section 3 and one for section 8. Leave them as they are for now.
 
 <details>
 <summary><b>What do all these options do?</b></summary>
 
-- `--subscriptions`, enables the GraphQL subscriptions infrastructure (websockets); not used in this workshop but harmless to keep on.
-- `--watch`, watches the database and updates the GraphQL schema automatically, so our SQL changes appear without restarting the server.
-- `--dynamic-json`, exposes JSON values as raw JSON instead of strings.
-- `--no-setof-functions-contain-nulls`, declares that our set-returning functions never return null rows, which gives cleaner (non-nullable) types.
-- `--no-ignore-rbac`, only exposes what the connecting role is actually allowed to access; we rely on this in section 8.
-- `--port 5000`, the HTTP port of the server.
-- `--show-error-stack=json` and `--extended-errors hint,detail,errcode`, verbose PostgreSQL errors in the responses; great while learning, avoid in production.
-- `--append-plugins ...`, loads the four plugins we installed above.
-- `--skip-plugins graphile-build:NodePlugin`, removes the Relay global `Node` interface, giving a smaller and simpler schema.
-- `--simple-collections only`, generates simple list fields (like `municipalitiesList`) instead of cursor connections; see section 3.
-- `--graphiql "/"`, serves the GraphiQL IDE at the root URL.
-- `--enhance-graphiql`, enables the full-featured GraphiQL (explorer sidebar, history and more).
-- `--allow-explain`, lets GraphiQL show the PostgreSQL execution plan of each query.
-- `--enable-query-batching`, allows clients to send several operations in one HTTP request.
-- `--legacy-relations omit`, skips deprecated duplicate relation fields.
-- `--connection`, the PostgreSQL connection string (who connects, and to which database).
-- `--schema app_public`, only this schema is exposed to GraphQL.
+Each option is the camelCase form of a PostGraphile CLI flag: `--simple-collections` becomes `simpleCollections`.
+
+- `connection`, the PostgreSQL connection string (who connects, and to which database). In it, `db` is the name of the database container.
+- `schema`, the schemas exposed to GraphQL; only `app_public` here.
+- `watch`, watches the database and updates the GraphQL schema automatically, so our SQL changes appear without restarting PostGraphile.
+- `simpleCollections`, set to `only`, it generates simple list fields (like `municipalitiesList`) instead of cursor connections; see section 3.
+- `appendPlugins`, loads the four plugins listed above.
+- `skipPlugins`, removes the Relay global `Node` interface, giving a smaller and simpler schema.
+- `graphiql`, serves the GraphiQL IDE at the root URL.
+- `enhanceGraphiql`, enables the full-featured GraphiQL (explorer sidebar, history and more).
+- `allowExplain`, lets GraphiQL show the PostgreSQL execution plan of each query.
+- `subscriptions`, enables the GraphQL subscriptions infrastructure (websockets); not used in this workshop but harmless to keep on.
+- `dynamicJson`, exposes JSON values as raw JSON instead of strings.
+- `setofFunctionsContainNulls`, set to `false`, it declares that our set-returning functions never return null rows, which gives cleaner (non-nullable) types.
+- `ignoreRbac`, set to `false`, it only exposes what the connecting role is actually allowed to access; we rely on this in section 8.
+- `legacyRelations`, set to `omit`, it skips deprecated duplicate relation fields.
+- `enableQueryBatching`, allows clients to send several operations in one HTTP request.
+- `showErrorStack`, adds the JavaScript stack trace to error responses; great while learning, avoid in production.
+- `extendedErrors`, adds the PostgreSQL hint, detail and error code to error responses; great while learning, avoid in production.
+
+Three more options sit in the `section8` block at the top of the file, next to the `connection` that section 8 uses. They only take effect in section 8:
+
+- `defaultRole`, the PostgreSQL role used for requests that carry no JWT (JSON Web Token).
+- `jwtSecret`, the secret that signs and verifies the JWTs.
+- `jwtTokenIdentifier`, the PostgreSQL type that PostGraphile turns into a JWT.
+
+The address and the port that PostGraphile listens on are not in the file. Inside its container PostGraphile listens on port 5000, and [docker-compose.yml](docker-compose.yml) publishes it on your machine as port 5001.
 
 </details>
 
-This will generate a minimal schema, since we are omitting the NodePlugin, with advanced filter mechanism and postgis support given by the added plugins from above. 
+This configuration generates a minimal schema, since we are omitting the NodePlugin, with the advanced filter mechanism and the PostGIS support given by the plugins from above.
+
+A note on the file format: PostGraphile 4 looks for its configuration under the name `.postgraphilerc.js` and marks that format as deprecated. The small file [postgraphile/.postgraphilerc.js](postgraphile/.postgraphilerc.js) only loads `config.js`. PostGraphile 5 is configured through a file as well, in a different format (`graphile.config.mjs`).
 
 ### Explore the interface and current schema
 
-Now that you run the CLI command, point your browser to [http://localhost:5000](http://localhost:5000) give it a first try. This interface is GraphiQL, a GraphQL IDE. Take a minute to find your way around it:
+Point your browser to [http://localhost:5001](http://localhost:5001) and give it a first try. This interface is GraphiQL, a GraphQL IDE. Take a minute to find your way around it:
 
 - The central panel is the **query editor**; the **play button** (or Ctrl+Enter) runs the current operation.
 - The **Explorer** panel on the left builds queries for you as you tick fields, a great way to discover the schema.
@@ -465,22 +464,34 @@ PostGraphile automatically generates sub geometries, the next query shows how th
 
 ### If something goes wrong
 
-- **Port 5000 already in use.** On recent macOS the AirPlay Receiver listens on port 5000; turn it off in *System Settings > General > AirDrop & Handoff*, or start PostGraphile with a different `--port`.
-- **Port 5432 already in use.** Another PostgreSQL is running on your machine. Stop it, or publish the Docker container on a different port and adjust the connection string accordingly.
-- **`postgraphile: command not found`.** Your npm global folder is not on the PATH. This is common with nvm; run `nvm use --lts` and reinstall, or add the output of `npm config get prefix`, plus `/bin`, to your PATH (on Windows, add the prefix folder itself).
-- **pgAdmin cannot restore the backup.** See the binary path note in [section 1](#1---create-and-restore-a-postgresql-database).
-- **pgAdmin runs in Docker and cannot reach the database.** Use `host.docker.internal` instead of `localhost` as the host name, as explained in [requirements](Requirements.md).
-- **"Failed to setup watch fixtures" warning.** Expected when the server connects with a non-superuser role (section 8) and safe to ignore.
+- **First, look at what is running.** `docker compose ps -a` lists the three services and their state (without `-a`, a service that is not running is left out), and `docker compose logs postgraphile` shows what PostGraphile printed. The log mentions `http://0.0.0.0:5000/`: that is the address inside the container. In your browser it is `http://localhost:5001`.
+- **Docker answers `no configuration file provided: not found`.** Your terminal is not in the folder of this repository. Change to that folder, the one that holds `docker-compose.yml`, and run the command again.
+- **A port is already in use.** Docker reports it when you start the environment, with a message that names the port; depending on the system it says `port is already allocated`, `address already in use` or `ports are not available`. Open [docker-compose.yml](docker-compose.yml), find the line with that port (5001, 5050 or 15432) and change only its middle number, for example `127.0.0.1:5001:5000` to `127.0.0.1:5011:5000`. Run `docker compose up -d` again and use 5011 wherever this README says 5001. If you do not know what is using the port, `docker compose ls` lists the Compose environments that are running on your machine.
+- **GraphiQL stops working after an edit of `postgraphile/config.js`.** There is probably a typo in the file. `docker compose logs postgraphile` shows the file name, the line and a `SyntaxError`. Fix the file, then run `docker compose restart postgraphile`.
+- **You edited `postgraphile/config.js` and nothing changed.** PostGraphile reads the file only when it starts, and `docker compose up -d` does not restart a container that is already running. Run `docker compose restart postgraphile`. If that changes nothing either, check that you saved the file, and that the file you edited is `config.js` and not `config.final.js`.
+- **The logs say `password authentication failed for user "app_postgraphile"`.** The section 8 line of `postgraphile/config.js` is active, but the database does not have that role yet: you are before section 8, or you reset the database. Put the two slashes back at the start of that line, or run the SQL of section 8 first. Then restart PostGraphile.
+- **The GraphiQL page stays blank for a long time.** Before it shows anything, the page waits for two scripts from unpkg.com (about 0.7 MB together), so it is slow on poor wifi. GraphiQL only uses them for its Prettify button, and the API itself does not need the internet.
+- **Docker reports `toomanyrequests`.** Docker Hub limits how many images one network address can download without an account, and a room full of people behind the same wifi can reach that limit. Run `docker login` with a free Docker account and try again, or use [GitHub Codespaces](#running-in-github-codespaces).
+- **On Linux, Docker Compose asks for Buildx.** Install the Buildx plugin (the package `docker-buildx-plugin` in Docker's own repositories) and run the command again.
+- **On Linux, `permission denied` on the Docker socket.** Add your user to the `docker` group, then log out of your Linux session and log in again, or run the commands with `sudo`.
+- **"Failed to setup watch fixtures" warning in the logs.** Expected when PostGraphile connects with a non-superuser role (section 8) and safe to ignore.
 
 ### Lost? Reset in three steps
 
 If at any point your database no longer matches the workshop, you can rebuild it to the exact point you need:
 
-1. Stop the PostGraphile server (Ctrl+C), then drop and recreate the `workshop_graphql` database and restore `initial_db.backup` again ([section 1](#1---create-and-restore-a-postgresql-database)).
-2. Open [compose/db/init/01-after-workshop.sql](compose/db/init/01-after-workshop.sql), which replays all the SQL of this README in order, and run it from the top down to the "end of section N" marker where you want to resume.
-3. Start the PostGraphile server again.
+1. Delete your database and start again from the initial one:
 
-**Note:** the SQL file does not recreate the section 8 users, since they are created through GraphQL mutations. If you reset during section 8, run the `m1`, `m2` and `m3` mutations again; on a fresh database they get ids 1, 2 and 3.
+   ```shell
+   docker compose down -v
+   docker compose up -d
+   ```
+
+   This takes a few seconds. pgAdmin starts from scratch too: give it about ten seconds, then reload its page in the browser.
+2. Open [compose/db/init/01-after-workshop.sql](compose/db/init/01-after-workshop.sql) in your text editor. It replays all the SQL of this README in order. Copy everything from the top down to the "end of section N" marker where you want to resume, paste it into the Query Tool of pgAdmin and run it. The first SQL of the workshop is in section 5, so there is nothing to replay before that.
+3. Make [postgraphile/config.js](postgraphile/config.js) match that point. The section 3 line starts with its two slashes. The section 8 line also starts with its two slashes, unless you replayed down to the end of section 8. Save the file, then run `docker compose restart postgraphile`.
+
+**Note:** `docker compose down -v` deletes the database but never touches your edits of `postgraphile/config.js`; the file [postgraphile/config.final.js](postgraphile/config.final.js) shows how it looks at the end of section 8. The SQL file does not recreate the section 8 users, since they are created through GraphQL mutations. If you reset during section 8, run the `m1`, `m2` and `m3` mutations again; on a fresh database they get ids 1, 2 and 3.
 
  ----------
 ## 3 - Pagination
@@ -514,47 +525,32 @@ The following query returns the 10 records after the first 10 records.
 
 In order to have some simplicity we deactivated cursor connections these type of connections come from the [Cursor Connections Specification](https://relay.dev/graphql/connections.htm) for more information you should read this specification since they can be quite useful. Cursor connections allows perform cursor-based pagination, and is seen as a GraphQL best practice.
 
-We can control how PostGraphile CLI generates `collections` using:
+The `simpleCollections` option in `postgraphile/config.js` controls how PostGraphile generates `collections`:
 
-`--simple-collections omit` "omit" - PostGraphile generates cursor connections only;
+`simpleCollections: "omit"` - PostGraphile generates cursor connections only;
 
-`--simple-collections only` "only" - simple collections only (no cursor connections);
+`simpleCollections: "only"` - simple collections only (no cursor connections);
 
-`--simple-collections both` "both" - both cursor and simple connections.
+`simpleCollections: "both"` - both cursor and simple connections.
 
-You can try to activate both cursor and simple connections, and explore the schema, please check the differences as following:
+You can try to activate both cursor and simple connections. Open [postgraphile/config.js](postgraphile/config.js) and find the line prepared for section 3, near the end of the file. Delete the two slashes at the start of that line, so that it reads `simpleCollections: "both",`, and save the file. The line repeats an option that is already set higher up in the file; the later one wins. Then restart PostGraphile:
 
 ```shell
-postgraphile \
-  --subscriptions \
-  --watch \
-  --dynamic-json \
-  --no-setof-functions-contain-nulls \
-  --no-ignore-rbac \
-  --port 5000 \
-  --show-error-stack=json \
-  --extended-errors hint,detail,errcode \
-  --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
-  --skip-plugins graphile-build:NodePlugin \
-  --simple-collections both \
-  --graphiql "/" \
-  --enhance-graphiql \
-  --allow-explain \
-  --enable-query-batching \
-  --legacy-relations omit \
-  --connection "postgres://postgres:postgis@localhost/workshop_graphql" \
-  --schema app_public
+docker compose restart postgraphile
 ```
 
-During this workshop we won't use cursor connections anymore. You can remove them using `--simple-collections only` or just copy the CLI command from the [beginning](#running-the-server-as-cli).
+Reload GraphiQL, explore the schema and check the differences: next to `municipalitiesList` there is now `municipalities`, a cursor connection with `nodes`, `edges`, `pageInfo` and `totalCount`.
+
+During this workshop we won't use cursor connections anymore. To remove them, put the two slashes back at the start of that line, save the file and restart PostGraphile again.
+
 ### Note for Library usage
 
-If you, just like me, you prefer to use simple connections but you don't like `List` suffix on the simple collections, you can remove it using `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile library.
+If you, just like me, prefer simple collections but don't like the `List` suffix on them, you can remove it with the build option `pgOmitListSuffix`. In library usage you add `{graphileBuildOptions: {pgOmitListSuffix: true}}` to the options passed to PostGraphile. The CLI has no flag for it, but the configuration file accepts the same setting: a line `graphileBuildOptions: { pgOmitListSuffix: true },` inside `options`, followed by a restart. Do not keep it switched on, though: the queries in the rest of this workshop use the `List` names.
 
 ----------
 ## 4 - Filters
 
-PostGraphile supports rudimentary filtering on connections using a **condition argument**. This condition mechanism is very limited and **does not support spatial** filtering. Therefore we will use instead [connection-filter plugin](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter) that we already installed and has advanced filter capabilities, including spatial filtering based on [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis).
+PostGraphile supports rudimentary filtering on connections using a **condition argument**. This condition mechanism is very limited and **does not support spatial** filtering. Therefore we will use instead [connection-filter plugin](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter) that is already installed in the `postgraphile` container and has advanced filter capabilities, including spatial filtering based on [postgraphile-plugin-connection-filter-postgis](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter-postgis).
 
 - Query all parcels that have `benfica` :stadium: in its name.
   
@@ -840,7 +836,7 @@ GraphQL query:
 }
 ```
 
-**Also works with filters.** Note: if you enable the `--no-ignore-indexes` option, PostGraphile removes filters (and ordering) on columns that lack an index (that would break some of the section 4 examples); computed-column filters like this one keep working.
+**Also works with filters.** Note: if you set the `ignoreIndexes` option to `false` (`--no-ignore-indexes` in the CLI), PostGraphile removes filters (and ordering) on columns that lack an index (that would break some of the section 4 examples); computed-column filters like this one keep working.
 ```graphql
 {
   parcelsList(filter: {area: {greaterThan: 300000}}) {
@@ -1084,10 +1080,10 @@ query {
   }
 }
 ```
-Note that we must use "MultiPolygon" because our datatype is "MultiPolygon". To check the constraints of a table you can use the psql command:
+Note that we must use "MultiPolygon" because our datatype is "MultiPolygon". To check the constraints of a table you can use psql, which is available inside the database container:
 
-```psql
-\d app_public.parcels
+```shell
+docker compose exec -T db psql -U postgres -d workshop_graphql -c "\d app_public.parcels"
 ```
 
 **To discuss:** Is there a way to insert both "MultiPolygon" and "Polygon" GeoJSON?
@@ -1221,7 +1217,7 @@ $$ language plpgsql strict security definer;
 comment on function app_public.register_person(text, text, text) is 'Registers a single user and creates an account into the app.';
 ```
 
-Now we have a mutation that allows us to register users but we are using a superuser in the PostGraphile CLI. Lets **not register any user for a moment** and check the Roles first. 
+Now we have a mutation that allows us to register users but PostGraphile still connects to the database as a superuser (the `connection` inside `options` in `postgraphile/config.js`). Lets **not register any user for a moment** and check the Roles first. 
 
 ### Roles
 When a user logs in, we want them to make their queries using a specific PostGraphile role. Using that role we can define rules that restrict what data the user may access.
@@ -1240,7 +1236,7 @@ grant app_person to app_postgraphile;
 ```
 #### Logging In
 
-PostGraphile uses [JSON Web Tokens (JWTs)](https://postgraphile.org/postgraphile/4/postgresql-schema-design/#json-web-tokens) for authorization. We can pass an option to PostGraphile, called `--jwt-token-identifier <identifier>` in the CLI, which takes a composite type identifier. PostGraphile will turn this type into a JWT wherever you see it in the GraphQL output. So let’s define the type we will use for our JWTs:
+PostGraphile uses [JSON Web Tokens (JWTs)](https://postgraphile.org/postgraphile/4/postgresql-schema-design/#json-web-tokens) for authorization. PostGraphile has an option called `jwtTokenIdentifier` (`--jwt-token-identifier` in the CLI), which takes a composite type identifier. PostGraphile will turn this type into a JWT wherever you see it in the GraphQL output. So let’s define the type we will use for our JWTs:
 
 
 ```sql
@@ -1320,46 +1316,20 @@ grant execute on function app_public.current_person() to app_anonymous, app_pers
 grant execute on function app_public.register_person(text, text, text) to app_anonymous;
 ```
 
-Updating the CLI with:
+PostGraphile now has to connect with the new role and to know about the JWTs. That takes four settings, which are prepared in the `section8` block at the top of [postgraphile/config.js](postgraphile/config.js):
 
-**--connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql"**  
-**--default-role app_anonymous**  
-**--schema app_public**  
-**--jwt-secret keyboard_kitten**  
-**--jwt-token-identifier app_public.jwt_token**
+- **connection**, `postgres://app_postgraphile:postgis@db/workshop_graphql`: PostGraphile connects as `app_postgraphile` and no longer as the superuser;
+- **defaultRole**, `app_anonymous`: the role for requests that carry no JWT;
+- **jwtSecret**, `keyboard_kitten`: the secret that signs and verifies the JWTs;
+- **jwtTokenIdentifier**, `app_public.jwt_token`: the type we created above.
 
-
-
-```shell
-postgraphile \
-  --subscriptions \
-  --watch \
-  --dynamic-json \
-  --no-setof-functions-contain-nulls \
-  --no-ignore-rbac \
-  --port 5000 \
-  --show-error-stack=json \
-  --extended-errors hint,detail,errcode \
-  --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis \
-  --skip-plugins graphile-build:NodePlugin \
-  --simple-collections only \
-  --graphiql "/" \
-  --enhance-graphiql \
-  --allow-explain \
-  --enable-query-batching \
-  --legacy-relations omit \
-  --connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql" \
-  --default-role app_anonymous \
-  --schema app_public \
-  --jwt-secret keyboard_kitten \
-  --jwt-token-identifier app_public.jwt_token
-```
-
-For Windows users use the following command instead:
+Make sure you have run all the SQL above: PostGraphile cannot connect before the role `app_postgraphile` exists. Then find the line prepared for section 8, near the end of the file. Delete the two slashes at the start of that line, so that it reads `...section8,` (the three dots are part of the line), and save the file. Then restart PostGraphile:
 
 ```shell
-postgraphile --subscriptions --watch --dynamic-json --no-setof-functions-contain-nulls --no-ignore-rbac --port 5000 --show-error-stack=json --extended-errors hint,detail,errcode --append-plugins @graphile-contrib/pg-simplify-inflector,@graphile/postgis,postgraphile-plugin-connection-filter,postgraphile-plugin-connection-filter-postgis --skip-plugins graphile-build:NodePlugin --simple-collections only --graphiql "/" --enhance-graphiql --allow-explain --enable-query-batching --legacy-relations omit --connection "postgres://app_postgraphile:postgis@localhost/workshop_graphql" --default-role app_anonymous --schema app_public --jwt-secret keyboard_kitten --jwt-token-identifier app_public.jwt_token
+docker compose restart postgraphile
 ```
+
+From now on `docker compose logs postgraphile` shows a "Failed to setup watch fixtures" warning, which is expected.
 
 
 Lets now register some users using our previous custom mutation. The block below contains three named operations; when you press play, GraphiQL asks which one to run. Run m1, m2 and m3 one at a time:
@@ -1528,7 +1498,7 @@ mutation updateParcel {
 
 In this workshop we went from a plain PostGIS database to a working spatial GraphQL API:
 
-- restored an existing spatial database and explored it (section 1);
+- started the whole environment with one command and explored an existing spatial database (section 1);
 - generated a GraphQL API on top of it and queried spatial data as GeoJSON, with pagination and spatial filters (sections 2 to 4);
 - shaped the schema with smart tags and extended it with computed columns, raster statistics and custom queries, all in SQL (sections 5 and 6);
 - added CRUD mutations, JWT authentication and row level security, enforced by PostgreSQL itself (sections 7 and 8).
@@ -1538,18 +1508,30 @@ In this workshop we went from a plain PostGIS database to a working spatial Grap
 Everything we did through GraphiQL is a plain HTTP POST to the same endpoint. Any client (curl, Python, JavaScript, a mobile app) can consume the API. For example, on macOS/Linux or Git Bash:
 
 ```shell
-curl -X POST http://localhost:5000/graphql \
+curl -X POST http://localhost:5001/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{ municipalitiesList(first: 2) { name district } }"}'
 ```
 
 ### A note on security
 
-The credentials in this workshop (the `postgis` password, the `keyboard_kitten` JWT secret) are deliberately public teaching values. In a real deployment use strong unique secrets, serve the API over HTTPS and read the [production considerations](https://postgraphile.org/postgraphile/4/production/).
+The credentials in this workshop (the `postgis` password, the `keyboard_kitten` JWT secret) are deliberately public teaching values, and pgAdmin opens without a login. That is acceptable here because Docker publishes the ports of the environment on your own machine only (`127.0.0.1`), so nobody else on the network can reach them. In a real deployment use strong unique secrets, serve the API over HTTPS and read the [production considerations](https://postgraphile.org/postgraphile/4/production/).
+
+### When you are done
+
+`docker compose stop` stops the environment and keeps your work for another day. To remove it from your machine, with its containers, your database and its images, run:
+
+```shell
+docker compose down -v --rmi all
+```
+
+If you also started the finished workshop (see below), remove it with `docker compose -f compose/final.yml down -v --rmi all`. Docker also keeps a build cache, shared by all your Docker projects; `docker builder prune -a` empties it.
+
+In GitHub Codespaces there is nothing to remove from your machine: delete the codespace instead, on [github.com/codespaces](https://github.com/codespaces).
 
 ### Where to go next
 
-- The [compose](compose/) folder runs the finished workshop stack (database and API) in containers.
+- The finished workshop, as it is at the end of section 8, can run next to your own environment: `docker compose -f compose/final.yml up -d` starts it on [http://localhost:5002](http://localhost:5002), and `docker compose -f compose/final.yml down -v` removes it. Its first start builds one more image, which takes about a minute.
 - [PostgreSQL schema design](https://postgraphile.org/postgraphile/4/postgresql-schema-design/), the long-form guide behind sections 7 and 8.
 - [Connection filter operators](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/main/docs/operators.md) and the [PostGIS documentation](https://postgis.net/documentation/).
 - My [workshop-postgis-raster](https://github.com/lcalisto/workshop-postgis-raster), for the raster side of PostGIS.

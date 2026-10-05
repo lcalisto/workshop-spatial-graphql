@@ -19,7 +19,7 @@ Run this from the root of the repository to start the state at the end of sectio
 docker compose -f compose/final.yml up -d
 ```
 
-The first start builds a second database image, which takes a few minutes. To stop the finished workshop and delete its database, run `docker compose -f compose/final.yml down -v`. Setting the environment variable `SIMPLE_COLLECTIONS` to `both` before starting it adds cursor connections.
+The first start builds a second database image, which takes about a minute. To stop the finished workshop and delete its database, run `docker compose -f compose/final.yml down -v`. Setting the environment variable `SIMPLE_COLLECTIONS` to `both` before starting it adds cursor connections.
 
 ## After changing something in this folder
 
