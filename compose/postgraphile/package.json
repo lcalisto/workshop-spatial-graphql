@@ -1,0 +1,12 @@
+{
+  "name": "workshop-spatial-graphql-postgraphile",
+  "private": true,
+  "description": "PostGraphile 4 and the plugins used in the workshop, at exact versions",
+  "dependencies": {
+    "postgraphile": "4.14.1",
+    "@graphile-contrib/pg-simplify-inflector": "6.1.0",
+    "@graphile/postgis": "0.2.0",
+    "postgraphile-plugin-connection-filter": "2.3.0",
+    "postgraphile-plugin-connection-filter-postgis": "1.0.0-alpha.6"
+  }
+}

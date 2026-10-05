@@ -1,0 +1,65 @@
+# GraphQL meets PostGIS: the workshop environment.
+#
+#   docker compose up -d                   start everything
+#   docker compose restart postgraphile    apply an edit to postgraphile/config.js
+#   docker compose down -v                 stop everything and delete your database changes
+#                                          (postgraphile/config.js keeps your edits)
+#
+#   GraphiQL  http://localhost:5001
+#   pgAdmin   http://localhost:5050
+#
+# Port already in use? Change only the middle number of that "ports" line, for example
+# 127.0.0.1:5001:5000 to 127.0.0.1:5011:5000, then run "docker compose up -d" again.
+
+name: workshop-spatial-graphql
+
+services:
+  db:
+    build:
+      context: ./compose/db
+      target: initial
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/workshop
+    ports:
+      - "127.0.0.1:15432:5432"
+    healthcheck:
+      # Healthy only with the workshop data in place: this is the last object of the dump.
+      test: ["CMD-SHELL", "psql -h 127.0.0.1 -U postgres -d workshop_graphql -tAc \"SELECT 1 FROM pg_event_trigger WHERE evtname = 'postgraphile_watch_drop'\" | grep -qx 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: root@localhost.com
+      PGADMIN_DEFAULT_PASSWORD: pgadmin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_CONFIG_USE_OS_SECRET_STORAGE: "False"
+      PGPASS_FILE: /workshop/pgpass
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./compose/pgadmin/servers.json:/pgadmin4/servers.json:ro,z
+      - ./compose/pgadmin/pgpass:/workshop/pgpass:ro,z
+    ports:
+      - "127.0.0.1:5050:80"
+
+  postgraphile:
+    build: ./compose/postgraphile
+    restart: unless-stopped
+    init: true
+    working_dir: /workshop/postgraphile
+    volumes:
+      - ./postgraphile:/workshop/postgraphile:ro,z
+    ports:
+      - "127.0.0.1:5001:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  pgadmin-data:

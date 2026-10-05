@@ -1,0 +1,45 @@
+# The finished workshop (the end of section 8), separate from your own environment.
+# Run both commands from the root of the repository.
+#
+#   docker compose -f compose/final.yml up -d      start it (the first start builds an image)
+#   docker compose -f compose/final.yml down -v    stop it and delete its database
+#
+#   GraphiQL  http://localhost:5002
+#
+# Port already in use? Change only the middle number of the "ports" line, for example
+# 127.0.0.1:5002:5000 to 127.0.0.1:5012:5000, then run the "up -d" command above again.
+
+name: workshop-spatial-graphql-final
+
+services:
+  db:
+    build:
+      context: ./db
+      target: final
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/workshop
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h 127.0.0.1 -U postgres -d workshop_graphql -tAc \"SELECT 1 FROM pg_policies WHERE schemaname = 'app_public' AND policyname = 'person_parcels_delete'\" | grep -qx 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  postgraphile:
+    build: ./postgraphile
+    restart: unless-stopped
+    init: true
+    working_dir: /workshop/postgraphile
+    environment:
+      WORKSHOP_CONFIG: ./config.final.js
+    command: ["--simple-collections", "${SIMPLE_COLLECTIONS:-only}"]
+    volumes:
+      - ../postgraphile:/workshop/postgraphile:ro,z
+    ports:
+      - "127.0.0.1:5002:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

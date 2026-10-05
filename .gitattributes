@@ -1,0 +1,2 @@
+# Mounted into a Linux container: keep LF line endings on every platform.
+compose/pgadmin/pgpass text eol=lf

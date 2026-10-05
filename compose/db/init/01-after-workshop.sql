@@ -112,7 +112,7 @@ comment on column app_private.person.password_hash is 'An opaque hash of the per
 
 create extension if not exists "pgcrypto";
 
-create or replace function app_public.register_person(
+create function app_public.register_person(
   name text,
   email text,
   password text

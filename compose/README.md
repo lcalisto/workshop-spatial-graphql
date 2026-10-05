@@ -1,31 +1,43 @@
-# Finished workshop stack
+# Support files for the workshop environment
 
-This folder runs the end result of the workshop in containers: PostGraphile configured exactly as in section 8 of the [README](../README.md) (all plugins, JWT authentication, `app_anonymous` default role), plus an optional database container that restores the workshop dump and replays every SQL statement of the README ([db/init/01-after-workshop.sql](db/init/01-after-workshop.sql)).
+The workshop starts with `docker compose up -d` in the root of the repository, as the [README](../README.md) explains. This folder holds what that command needs. You do not have to change anything here to follow the workshop.
 
-Use it to preview the end state, to recover a broken environment, or as a starting point for your own projects.
+## What is here
 
-## Usage
+- `db/Dockerfile`: PostgreSQL 17 with PostGIS, on the official `postgres` image. The workshop database is restored while the image is built, so the database starts in seconds, and `docker compose down -v` followed by `docker compose up -d` gives a clean copy.
+- `db/init/00-initial-db.sql.gz`: the workshop database.
+- [`db/init/01-after-workshop.sql`](db/init/01-after-workshop.sql): every SQL statement of the README, in order, with "end of section N" markers.
+- `postgraphile/`: the PostGraphile 4 image. `package.json` and `package-lock.json` fix the exact versions. The PostGraphile options are not here but in [`postgraphile/config.js`](../postgraphile/config.js) at the root of the repository.
+- `pgadmin/`: the saved server and the password file that let pgAdmin open the database without asking anything.
+- `final.yml`: the finished workshop as a separate environment.
 
-1. Copy the environment template and set your values:
+## The finished workshop
 
-   ```shell
-   cp .env.example .env
-   ```
+Run this from the root of the repository to start the state at the end of section 8 (no users registered) on [http://localhost:5002](http://localhost:5002), next to your own environment:
 
-2. Pick where the database lives:
-   - **Database on your host (default).** The `graphql` service connects to it through `host.docker.internal`. Your database must already have section 8 applied (the `app_postgraphile` role must exist); put its password in `DATABASE_URL`.
-   - **Everything in containers.** Uncomment the `db` service, the `depends_on` lines and the `volumes` block in [docker-compose.yml](docker-compose.yml), then point `DATABASE_URL` at it: `postgres://app_postgraphile:postgis@db/workshop_graphql` (this role and password are created by the init SQL).
+```shell
+docker compose -f compose/final.yml up -d
+```
 
-3. Start the stack:
+The first start builds a second database image, which takes a few minutes. To stop the finished workshop and delete its database, run `docker compose -f compose/final.yml down -v`. Setting the environment variable `SIMPLE_COLLECTIONS` to `both` before starting it adds cursor connections.
 
-   ```shell
-   docker compose up -d --build
-   ```
+## After changing something in this folder
 
-4. Open GraphiQL at http://localhost:5433. The API uses port 5433 on purpose, so it never clashes with a workshop server running locally on port 5000. The `db` service, when enabled, publishes PostgreSQL on port 5432; its first boot takes a minute or two while the dump is restored.
+A rebuilt image does not reach a database volume that already exists, so the volume has to be deleted too. This resets the database: every SQL change you made is lost. Run:
 
-If port 5432 is already taken on your host (a local PostgreSQL, for instance), change only the host side of the mapping in the compose file (for example `55432:5432`). The `graphql` service reaches the database over the internal Docker network, so that mapping only matters for tools like pgAdmin.
+```shell
+docker compose down -v
+docker compose up -d --build
+```
 
-To reset everything: `docker compose down -v` and start again.
+For the finished workshop, run the same pair with `-f compose/final.yml`.
 
-Note for Apple Silicon: the db image is amd64 only and runs through emulation (that is what the `platform: linux/amd64` line in the compose file is for).
+## Updating the pinned packages
+
+Edit [`postgraphile/package.json`](postgraphile/package.json) in this folder, then regenerate the lockfile from the root of the repository:
+
+```shell
+docker run --rm -v "$PWD/compose/postgraphile":/w -w /w node:22-alpine npm install --package-lock-only
+```
+
+Then rebuild as described above.
