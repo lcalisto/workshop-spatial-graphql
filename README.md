@@ -1526,7 +1526,7 @@ The credentials in this workshop (the `postgis` password, the `keyboard_kitten` 
 docker compose down -v --rmi all
 ```
 
-If you also started the finished workshop (see below), remove it with `docker compose -f compose/final.yml down -v --rmi all`. If an update of the repository left older versions of the workshop images behind, `docker image ls --filter "reference=ghcr.io/lcalisto/workshop-spatial-graphql/*"` lists them and `docker image rm` followed by a name and tag from that list removes one. If Docker ever built the images on your machine, it also keeps a build cache, shared by all your Docker projects; `docker builder prune -a` empties it.
+If you also started the finished workshop (see below), remove it with `docker compose -f compose/final.yml down -v --rmi all`. If an update of the repository left older versions of the workshop images behind, `docker image ls --filter "reference=ghcr.io/lcalisto/workshop-spatial-graphql/*"` lists them and `docker image rm` followed by a name and tag from that list removes one. While both environments exist, Docker may report that it cannot remove the PostGraphile image, which they share; the second command removes it. If Docker ever built the images on your machine, it also keeps a build cache, shared by all your Docker projects; `docker builder prune -a` empties it.
 
 In GitHub Codespaces there is nothing to remove from your machine: delete the codespace instead, on [github.com/codespaces](https://github.com/codespaces).
 
