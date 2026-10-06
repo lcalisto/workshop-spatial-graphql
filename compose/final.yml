@@ -1,7 +1,7 @@
 # The finished workshop (the end of section 8), separate from your own environment.
 # Run both commands from the root of the repository.
 #
-#   docker compose -f compose/final.yml up -d      start it (the first start builds an image)
+#   docker compose -f compose/final.yml up -d      start it (the first start downloads an image)
 #   docker compose -f compose/final.yml down -v    stop it and delete its database
 #
 #   GraphiQL  http://localhost:5002
@@ -13,6 +13,7 @@ name: workshop-spatial-graphql-final
 
 services:
   db:
+    image: ghcr.io/lcalisto/workshop-spatial-graphql/db:final-1
     build:
       context: ./db
       target: final
@@ -26,6 +27,7 @@ services:
       retries: 30
 
   postgraphile:
+    image: ghcr.io/lcalisto/workshop-spatial-graphql/postgraphile:1
     build: ./postgraphile
     restart: unless-stopped
     init: true

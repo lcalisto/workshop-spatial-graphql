@@ -10,11 +10,17 @@
 #
 # Port already in use? Change only the middle number of that "ports" line, for example
 # 127.0.0.1:5001:5000 to 127.0.0.1:5011:5000, then run "docker compose up -d" again.
+#
+# The db and postgraphile images are downloaded from the GitHub Container Registry; when the
+# download fails, Docker builds them from the compose/ folder instead. In a copy of this
+# repository that changes compose/db or compose/postgraphile, delete the two "image:" lines
+# below, so that Docker builds your version (see compose/README.md).
 
 name: workshop-spatial-graphql
 
 services:
   db:
+    image: ghcr.io/lcalisto/workshop-spatial-graphql/db:initial-1
     build:
       context: ./compose/db
       target: initial
@@ -48,6 +54,7 @@ services:
       - "127.0.0.1:5050:80"
 
   postgraphile:
+    image: ghcr.io/lcalisto/workshop-spatial-graphql/postgraphile:1
     build: ./compose/postgraphile
     restart: unless-stopped
     init: true

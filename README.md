@@ -56,7 +56,7 @@ Event wifi is usually slow and shared, so please prepare your machine in advance
    docker compose up -d
    ```
 
-   This first start downloads about 0.5 GB and builds the workshop images, so it takes a few minutes and needs about 3 GB of free disk space. Later starts take seconds.
+   This first start downloads about 0.6 GB, so it takes a few minutes and needs about 3 GB of free disk space. Later starts take seconds, and on the day nothing has to be downloaded.
 5. Open [http://localhost:5001](http://localhost:5001) (GraphiQL) and [http://localhost:5050](http://localhost:5050) (pgAdmin) in your browser. pgAdmin takes the longest to start: if its page does not load yet, wait about ten seconds and reload. If both pages load, you are ready.
 6. Stop the environment until the workshop. Nothing is lost:
 
@@ -66,7 +66,7 @@ Event wifi is usually slow and shared, so please prepare your machine in advance
 
 On the day, start Docker and run `docker compose up -d` again in the same folder.
 
-If you update your copy of the repository later (`git pull` or a new ZIP), rebuild the environment with `docker compose down -v` followed by `docker compose up -d --build`. This also resets the database to its initial state.
+If you update your copy of the repository later (`git pull` or a new ZIP), reset the environment with `docker compose down -v` followed by `docker compose up -d`. Docker downloads any workshop image that changed, and the database goes back to its initial state.
 
 If something fails, no stress, we will sort it out together at the start of the session. The list under [If something goes wrong](#if-something-goes-wrong) covers the usual problems.
 
@@ -106,7 +106,7 @@ The [Before the workshop](#before-the-workshop-try-to-do-this-at-home) checklist
 A codespace runs the same Docker Compose environment as your own machine, in the cloud. It starts the environment for you, so skip the `docker compose up -d` step of section 1. The steps below list what else is different; the rest of this README applies as written.
 
 1. On the GitHub page of this repository choose **Code > Codespaces > Create codespace on main**.
-2. The first start builds the environment, which takes a few minutes. In the terminal of the codespace, run `docker compose ps` until it lists three services, with `(healthy)` next to `db`.
+2. The first start downloads the workshop images, which takes a few minutes. In the terminal of the codespace, run `docker compose ps` until it lists three services, with `(healthy)` next to `db`.
 3. Open the **Ports** tab and open ports 5001 (GraphiQL) and 5050 (pgAdmin) in the browser. Use those two addresses in your browser wherever this README says `http://localhost:5001` or `http://localhost:5050`. Commands that you run in the terminal of the codespace, such as the `curl` example of the wrap-up, keep `localhost`. The finished workshop of the wrap-up is port 5002 in the same tab.
 4. From here on, whenever this README asks you to edit `postgraphile/config.js`, do it in the editor of the codespace, and run the `docker compose` commands in its terminal.
 
@@ -150,7 +150,7 @@ Open a terminal in the folder of this repository and start the environment (in C
 docker compose up -d
 ```
 
-If you went through the [Before the workshop](#before-the-workshop-try-to-do-this-at-home) checklist, this takes a few seconds. Otherwise Docker first downloads about 0.5 GB and builds the workshop images, which takes a few minutes. Either way, the command starts three containers (Docker Compose calls them services):
+If you went through the [Before the workshop](#before-the-workshop-try-to-do-this-at-home) checklist, this takes a few seconds. Otherwise Docker first downloads about 0.6 GB, which takes a few minutes. Either way, the command starts three containers (Docker Compose calls them services):
 
 | What | Where | Notes |
 | ---- | ----- | ----- |
@@ -166,7 +166,7 @@ docker compose ps
 
 You should see the three services `db`, `pgadmin` and `postgraphile` with a status that starts with `Up`, and `(healthy)` next to `db`. If something looks different, see [If something goes wrong](#if-something-goes-wrong).
 
-The database is already there: it was restored while Docker built the database image, so there is nothing to create or import.
+The database is already there: it was restored when the database image was built, so there is nothing to create or import.
 
 ### A first look with pgAdmin
 
@@ -471,6 +471,7 @@ PostGraphile automatically generates sub geometries, the next query shows how th
 - **You edited `postgraphile/config.js` and nothing changed.** PostGraphile reads the file only when it starts, and `docker compose up -d` does not restart a container that is already running. Run `docker compose restart postgraphile`. If that changes nothing either, check that you saved the file, and that the file you edited is `config.js` and not `config.final.js`.
 - **The logs say `password authentication failed for user "app_postgraphile"`.** The section 8 line of `postgraphile/config.js` is active, but the database does not have that role yet: you are before section 8, or you reset the database. Put the two slashes back at the start of that line, or run the SQL of section 8 first. Then restart PostGraphile.
 - **The GraphiQL page stays blank for a long time.** Before it shows anything, the page waits for two scripts from unpkg.com (about 0.7 MB together), so it is slow on poor wifi. GraphiQL only uses them for its Prettify button, and the API itself does not need the internet.
+- **Docker builds the images instead of downloading them.** The workshop images come from the GitHub Container Registry (`ghcr.io`). When Docker cannot download them, for example because the network blocks `ghcr.io` or `pkg-containers.githubusercontent.com`, it reports the failed download and builds the images on your machine instead; it can wait a minute for the download to fail before it starts. The build takes a few minutes and about 0.3 GB of downloads from Docker Hub and other sites, and gives the same environment. An old login to `ghcr.io` that has expired can also cause this: run `docker logout ghcr.io` and try again.
 - **Docker reports `toomanyrequests`.** Docker Hub limits how many images one network address can download without an account, and a room full of people behind the same wifi can reach that limit. Run `docker login` with a free Docker account and try again, or use [GitHub Codespaces](#running-in-github-codespaces).
 - **On Linux, Docker Compose asks for Buildx.** Install the Buildx plugin (the package `docker-buildx-plugin` in Docker's own repositories) and run the command again.
 - **On Linux, `permission denied` on the Docker socket.** Add your user to the `docker` group, then log out of your Linux session and log in again, or run the commands with `sudo`.
@@ -1525,13 +1526,13 @@ The credentials in this workshop (the `postgis` password, the `keyboard_kitten` 
 docker compose down -v --rmi all
 ```
 
-If you also started the finished workshop (see below), remove it with `docker compose -f compose/final.yml down -v --rmi all`. Docker also keeps a build cache, shared by all your Docker projects; `docker builder prune -a` empties it.
+If you also started the finished workshop (see below), remove it with `docker compose -f compose/final.yml down -v --rmi all`. If an update of the repository left older versions of the workshop images behind, `docker image ls --filter "reference=ghcr.io/lcalisto/workshop-spatial-graphql/*"` lists them and `docker image rm` followed by a name and tag from that list removes one. If Docker ever built the images on your machine, it also keeps a build cache, shared by all your Docker projects; `docker builder prune -a` empties it.
 
 In GitHub Codespaces there is nothing to remove from your machine: delete the codespace instead, on [github.com/codespaces](https://github.com/codespaces).
 
 ### Where to go next
 
-- The finished workshop, as it is at the end of section 8, can run next to your own environment: `docker compose -f compose/final.yml up -d` starts it on [http://localhost:5002](http://localhost:5002), and `docker compose -f compose/final.yml down -v` removes it. Its first start builds one more image, which takes about a minute.
+- The finished workshop, as it is at the end of section 8, can run next to your own environment: `docker compose -f compose/final.yml up -d` starts it on [http://localhost:5002](http://localhost:5002), and `docker compose -f compose/final.yml down -v` removes it. Its first start downloads one more image (150 to 360 MB).
 - [PostgreSQL schema design](https://postgraphile.org/postgraphile/4/postgresql-schema-design/), the long-form guide behind sections 7 and 8.
 - [Connection filter operators](https://github.com/graphile-contrib/postgraphile-plugin-connection-filter/blob/main/docs/operators.md) and the [PostGIS documentation](https://postgis.net/documentation/).
 - My [workshop-postgis-raster](https://github.com/lcalisto/workshop-postgis-raster), for the raster side of PostGIS.
